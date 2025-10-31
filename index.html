@@ -1,0 +1,1598 @@
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, addDoc, limit, orderBy } from 'firebase/firestore';
+import { LogIn, UserPlus, Mail, Lock, Phone, CornerDownRight, Menu, Settings, LogOut, Loader2, Home, Users, BookOpen, Newspaper, MessageSquare, Video, Calendar, HeartHandshake, Zap, Sun, Moon, Twitter, Facebook, Instagram, Send, User, MapPin, Globe, Clock, AlignJustify, X, Bell, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+
+// --- CONFIGURACIÓN Y UTILIDADES DE FIREBASE ---
+// Variables globales proporcionadas por el entorno
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Contexto de la Aplicación para compartir estado global fácilmente
+const AppContext = createContext();
+
+// Definición de las traducciones para la internacionalización
+const translations = {
+  es: {
+    APP_TITLE: "Radio Resucitada",
+    WELCOME_TITLE: "Bienvenido",
+    LOGIN_TITLE: "Iniciar Sesión",
+    REGISTER_TITLE: "Crear Cuenta",
+    FORGOT_PASSWORD: "¿Olvidó su contraseña?",
+    EMAIL: "Correo Electrónico",
+    PASSWORD: "Contraseña",
+    CONFIRM_PASSWORD: "Confirmar Contraseña",
+    FIRST_NAME: "Nombre",
+    LAST_NAME: "Apellido",
+    PHONE_NUMBER: "Número de Teléfono",
+    MEMBER_STATUS: "¿Es usted miembro?",
+    MEMBER: "Miembro",
+    VISITOR: "Visitante",
+    LOGIN_BUTTON: "Entrar",
+    REGISTER_BUTTON: "Registrarse",
+    BACK_TO_LOGIN: "Volver a Iniciar Sesión",
+    ENTER_EMAIL_CONTINUE: "Ingrese su email en el campo de abajo para continuar con el registro.",
+    MENU_CHURCH: "Iglesias Afiliadas",
+    MENU_MINISTRIES: "Ministerios",
+    MENU_READING_PLAN: "Plan de Lectura",
+    MENU_NEWS: "Noticias",
+    MENU_MESSAGES: "Mensajes",
+    MENU_LIVE: "En Vivos",
+    MENU_EVENTS: "Eventos",
+    MENU_PRAYER_WALL: "Muro de Oración",
+    MENU_PRAYER_PLAN: "Plan de Oración",
+    MENU_BIBLE_STUDY: "Estudio Bíblico",
+    MENU_DEVOTIONAL: "Devocionales",
+    SETTINGS_TITLE: "Ajustes de la Aplicación",
+    SETTINGS_LANGUAGE: "Idioma",
+    SETTINGS_THEME: "Tema",
+    SETTINGS_NOTIFICATIONS: "Notificaciones",
+    NOTIF_LIVE: "Transmisión en Directo",
+    NOTIF_EVENTS: "Eventos",
+    NOTIF_NEWS: "Noticias",
+    LOGOUT: "Cerrar Sesión",
+    EVENT_DETAIL: "Detalle del Evento",
+    PRAYER_REQUEST: "Petición Personal",
+    PRAYER_COUNT: "Oraciones Recibidas",
+    SUBMIT_PRAYER: "Enviar Petición",
+    ENTER_PRAYER_TEXT: "Ingrese su petición de oración aquí...",
+    PRAYER_SUCCESS: "¡Petición enviada con éxito!",
+    REQUIRED_FIELD: "Este campo es obligatorio.",
+    LOGIN_ERROR: "Error al iniciar sesión. Verifique su correo y contraseña.",
+    REGISTER_ERROR: "Error al registrar. Inténtelo de nuevo.",
+    PASSWORDS_MISMATCH: "Las contraseñas no coinciden.",
+    CHURCHES_TITLE: "Nuestras Iglesias Afiliadas",
+    MINISTRIES_TITLE: "Ministerios de la Obra",
+    MINISTRY_ALABANZA: "Alabanza y Adoración",
+    MINISTRY_YOUTH: "Jóvenes",
+    MINISTRY_PREYOUTH: "Pre-Jóvenes",
+    MINISTRY_MEN: "Caballeros",
+    MINISTRY_WOMEN: "Damas",
+    MINISTRY_USHERS: "Ujieres",
+    MINISTRY_CHILDREN: "Niños",
+    MINISTRY_EVANGELISM: "Evangelismo",
+    READING_PLAN_BIBLE: "Planes de Lectura Bíblica",
+    READING_PLAN_STUDY: "Estudios y Libros",
+    NEWS_GATHERING: "Noticias de la Obra",
+    NEWS_EVENTS: "Próximos Eventos",
+    MESSAGES_LINKS: "Mensajes y Predicaciones Anteriores",
+    LIVE_TWITCH: "Transmisión en Vivo (Twitch)",
+    DEVOTIONAL_CONTENT: "Contenido Devocional Diario",
+    DEVOTIONAL_MUSIC: "Alabanzas y Coros",
+    PRAYER_WALL_REQUESTS: "Peticiones de la Comunidad",
+    PRAYER_PLAN_CONFIG: "Configurar Recordatorio Devocional",
+    PRAYER_PLAN_DAY: "Seleccione Día",
+    PRAYER_PLAN_HOUR: "Seleccione Hora",
+    CONFIRM_PLAN: "Confirmar Plan",
+    NEW_PLAN: "Crear Nuevo Plan",
+    TWITCH_LIVE: "Reproductor en Vivo:",
+    LEADER: "Líder",
+    CELL_ADDRESS: "Dirección de Célula",
+    DETAIL: "Detalle",
+    CLOSE: "Cerrar",
+    MONTH_NAMES: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+    DAY_NAMES_SHORT: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+    NO_EVENTS: "No hay eventos para esta fecha.",
+    EVENTS_FOR: "Eventos para",
+    TOGGLE_ON: "Activado",
+    TOGGLE_OFF: "Desactivado",
+  },
+  en: {
+    APP_TITLE: "Resurrected Radio",
+    WELCOME_TITLE: "Welcome",
+    LOGIN_TITLE: "Sign In",
+    REGISTER_TITLE: "Create Account",
+    FORGOT_PASSWORD: "Forgot your password?",
+    EMAIL: "Email Address",
+    PASSWORD: "Password",
+    CONFIRM_PASSWORD: "Confirm Password",
+    FIRST_NAME: "First Name",
+    LAST_NAME: "Last Name",
+    PHONE_NUMBER: "Phone Number",
+    MEMBER_STATUS: "Are you a member?",
+    MEMBER: "Member",
+    VISITOR: "Visitor",
+    LOGIN_BUTTON: "Sign In",
+    REGISTER_BUTTON: "Register",
+    BACK_TO_LOGIN: "Back to Sign In",
+    ENTER_EMAIL_CONTINUE: "Enter your email in the field below to continue registration.",
+    MENU_CHURCH: "Affiliated Churches",
+    MENU_MINISTRIES: "Ministries",
+    MENU_READING_PLAN: "Reading Plan",
+    MENU_NEWS: "News",
+    MENU_MESSAGES: "Messages",
+    MENU_LIVE: "Live Streams",
+    MENU_EVENTS: "Events",
+    MENU_PRAYER_WALL: "Prayer Wall",
+    MENU_PRAYER_PLAN: "Prayer Plan",
+    MENU_BIBLE_STUDY: "Bible Study",
+    MENU_DEVOTIONAL: "Devotional",
+    SETTINGS_TITLE: "App Settings",
+    SETTINGS_LANGUAGE: "Language",
+    SETTINGS_THEME: "Theme",
+    SETTINGS_NOTIFICATIONS: "Notifications",
+    NOTIF_LIVE: "Live Stream",
+    NOTIF_EVENTS: "Events",
+    NOTIF_NEWS: "News",
+    LOGOUT: "Logout",
+    EVENT_DETAIL: "Event Details",
+    PRAYER_REQUEST: "Personal Request",
+    PRAYER_COUNT: "Prayers Received",
+    SUBMIT_PRAYER: "Submit Request",
+    ENTER_PRAYER_TEXT: "Enter your prayer request here...",
+    PRAYER_SUCCESS: "Request sent successfully!",
+    REQUIRED_FIELD: "This field is required.",
+    LOGIN_ERROR: "Sign in error. Check your email and password.",
+    REGISTER_ERROR: "Registration error. Please try again.",
+    PASSWORDS_MISMATCH: "Passwords do not match.",
+    CHURCHES_TITLE: "Our Affiliated Churches",
+    MINISTRIES_TITLE: "Work Ministries",
+    MINISTRY_ALABANZA: "Praise and Worship",
+    MINISTRY_YOUTH: "Youth",
+    MINISTRY_PREYOUTH: "Pre-Youth",
+    MINISTRY_MEN: "Men's Ministry",
+    MINISTRY_WOMEN: "Women's Ministry",
+    MINISTRY_USHERS: "Ushers Ministry",
+    MINISTRY_CHILDREN: "Children's Ministry",
+    MINISTRY_EVANGELISM: "Evangelism Ministry",
+    READING_PLAN_BIBLE: "Bible Reading Plans",
+    READING_PLAN_STUDY: "Studies and Books",
+    NEWS_GATHERING: "Work News",
+    NEWS_EVENTS: "Upcoming Events",
+    MESSAGES_LINKS: "Past Messages and Sermons",
+    LIVE_TWITCH: "Live Stream (Twitch)",
+    DEVOTIONAL_CONTENT: "Daily Devotional Content",
+    DEVOTIONAL_MUSIC: "Praise and Chorus Songs",
+    PRAYER_WALL_REQUESTS: "Community Requests",
+    PRAYER_PLAN_CONFIG: "Configure Devotional Reminder",
+    PRAYER_PLAN_DAY: "Select Day",
+    PRAYER_PLAN_HOUR: "Select Time",
+    CONFIRM_PLAN: "Confirm Plan",
+    NEW_PLAN: "Create New Plan",
+    TWITCH_LIVE: "Live Player:",
+    LEADER: "Leader",
+    CELL_ADDRESS: "Cell Address",
+    DETAIL: "Detail",
+    CLOSE: "Close",
+    MONTH_NAMES: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    DAY_NAMES_SHORT: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    NO_EVENTS: "No events for this date.",
+    EVENTS_FOR: "Events for",
+    TOGGLE_ON: "On",
+    TOGGLE_OFF: "Off",
+  }
+};
+
+const AppProvider = ({ children }) => {
+  const [db, setDb] = useState(null);
+  const [auth, setAuth] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [language, setLanguage] = useState('es');
+  const [theme, setTheme] = useState('dark'); // 'dark' or 'light'
+  const t = translations[language];
+
+  // 1. Inicialización y Autenticación de Firebase
+  useEffect(() => {
+    try {
+      const app = initializeApp(firebaseConfig);
+      const firestore = getFirestore(app);
+      const authInstance = getAuth(app);
+      setDb(firestore);
+      setAuth(authInstance);
+
+      // Listener para el estado de autenticación
+      const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
+        if (user) {
+          setUserId(user.uid);
+          if (document.body.getAttribute('data-screen') === 'loading') {
+            document.body.setAttribute('data-screen', 'main');
+          }
+        } else {
+          setUserId(null);
+          document.body.setAttribute('data-screen', 'login');
+          if (!initialAuthToken) {
+            await signInAnonymously(authInstance);
+          }
+        }
+      });
+
+      const trySignIn = async () => {
+        try {
+          if (initialAuthToken) {
+            await signInWithCustomToken(authInstance, initialAuthToken);
+          } else {
+            await signInAnonymously(authInstance);
+          }
+        } catch (error) {
+          console.error("Error al iniciar sesión con token/anónimamente:", error);
+        }
+        document.body.setAttribute('data-screen', 'main');
+      };
+
+      trySignIn();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error al inicializar Firebase:", error);
+    }
+  }, []);
+
+  // 2. Definición de la ruta de datos
+  const getCollectionPath = (collectionName, isPublic = false) => {
+    if (!db || !userId) return '';
+    if (isPublic) {
+      return `artifacts/${appId}/public/data/${collectionName}`;
+    }
+    return `artifacts/${appId}/users/${userId}/${collectionName}`;
+  };
+
+  const isAuthReady = db && auth && userId;
+
+  return (
+    <AppContext.Provider value={{ db, auth, userId, isAuthReady, t, language, setLanguage, theme, setTheme, getCollectionPath }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// Hook personalizado para usar el contexto
+const useAppContext = () => useContext(AppContext);
+
+// --- COMPONENTES DE LA INTERFAZ (Ajustados a color ESMERALDA) ---
+
+// Componente para el fondo dinámico (simula video)
+const BackgroundVideo = ({ theme }) => (
+  <div className={`fixed inset-0 z-0 transition-all duration-500 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    {/* Simulando un video en loop con un gradiente animado */}
+    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 via-gray-800/50 to-teal-900/50 opacity-70 animate-pulse-slow"></div>
+    {/* Placeholder para la imagen o video */}
+    <div className="absolute inset-0 flex items-center justify-center text-white/50 text-xl font-bold">
+      <span className="text-sm">Fondo Dinámico de Radio Resucitada</span>
+    </div>
+  </div>
+);
+
+// Botón de Estilo Centralizado
+const PrimaryButton = ({ onClick, children, disabled = false, icon: Icon, className = "", type = "button" }) => (
+  <button
+    onClick={onClick}
+    type={type}
+    disabled={disabled}
+    className={`w-full flex items-center justify-center space-x-2 px-4 py-3 text-lg font-semibold rounded-xl transition-all duration-300 transform shadow-lg
+      ${disabled ? 'bg-gray-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]'}
+      text-white focus:outline-none focus:ring-4 focus:ring-emerald-500/50 ${className}`}
+  >
+    {Icon && <Icon className={`w-5 h-5 ${disabled && 'animate-spin'}`} />}
+    <span>{children}</span>
+  </button>
+);
+
+// Componente de Campo de Formulario
+const InputField = ({ label, type = 'text', value, onChange, placeholder, required = false, icon: Icon, name }) => {
+  const { theme } = useAppContext();
+  return (
+    <div className="relative mb-4">
+      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{label}{required && <span className="text-red-500">*</span>}</label>
+      <div className="flex items-center">
+        {Icon && <Icon className={`absolute left-3 w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          name={name}
+          className={`w-full p-3 pl-10 border rounded-xl focus:ring-emerald-500 focus:border-emerald-500 transition-colors
+            ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Componente Modal Reutilizable
+const Modal = ({ isOpen, onClose, title, children }) => {
+  const { theme } = useAppContext();
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 backdrop-blur-sm transition-opacity duration-300">
+      <div className={`relative w-full max-w-lg p-6 rounded-2xl shadow-2xl transition-all transform duration-300
+        ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+      >
+        <button
+          onClick={onClose}
+          className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
+        >
+          <X className="w-6 h-6" />
+        </button>
+        <h3 className="text-3xl font-bold text-emerald-400 mb-4 border-b pb-2">{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Componente de Toggle
+const Toggle = ({ label, checked, onChange }) => {
+  const { t, theme } = useAppContext();
+  return (
+    <div className="flex justify-between items-center py-3 border-b border-gray-700/50">
+      <span className={`text-lg font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{label}</span>
+      <div
+        className={`relative inline-flex items-center h-8 w-16 rounded-full cursor-pointer transition-colors ${checked ? 'bg-emerald-500' : 'bg-gray-500'}`}
+        onClick={() => onChange(!checked)}
+      >
+        <span
+          className={`inline-block w-7 h-7 transform bg-white rounded-full transition-transform duration-300 shadow-md ${checked ? 'translate-x-8' : 'translate-x-0.5'}`}
+        />
+        <span className={`absolute right-1 text-xs font-bold transition-opacity duration-300 ${checked ? 'opacity-0' : 'opacity-100 text-white'}`}>{t.TOGGLE_OFF}</span>
+        <span className={`absolute left-1 text-xs font-bold transition-opacity duration-300 ${checked ? 'opacity-100 text-white' : 'opacity-0'}`}>{t.TOGGLE_ON}</span>
+      </div>
+    </div>
+  );
+};
+
+
+// --- PANTALLAS DE AUTENTICACIÓN (Login, Registro) ---
+
+const AuthScreen = ({ setCurrentScreen }) => {
+  const { auth, db, t, theme, getCollectionPath } = useAppContext();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [emailStep, setEmailStep] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    isMember: 'visitor',
+  });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(null);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+    } catch (err) {
+      console.error("Login Error:", err);
+      setError(t.LOGIN_ERROR);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterStepOne = (e) => {
+    e.preventDefault();
+    if (!formData.email) {
+      setError(t.REQUIRED_FIELD);
+      return;
+    }
+    setEmailStep(false);
+  };
+
+  const handleRegisterStepTwo = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError(t.PASSWORDS_MISMATCH);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(db, getCollectionPath('user_profile'), user.uid);
+      await setDoc(userDocRef, {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        isMember: formData.isMember === 'member',
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Registration Error:", err);
+      setError(t.REGISTER_ERROR + ": " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const commonCardStyle = `w-full max-w-sm p-8 mx-auto rounded-3xl shadow-2xl transition-all duration-500
+    ${theme === 'dark' ? 'bg-gray-800/90 text-white' : 'bg-white/95 text-gray-900'} backdrop-blur-md`;
+
+  const renderLoginForm = () => (
+    <div className={commonCardStyle}>
+      {/* Nuevo Logo Placeholder (Ajustado al color esmeralda) */}
+      <img src="https://placehold.co/100x100/10b981/ffffff?text=R" alt="App Logo" className="mx-auto mb-6 rounded-lg"/>
+      <h2 className="text-3xl font-extrabold text-center mb-6">{t.LOGIN_TITLE}</h2>
+
+      <form onSubmit={handleLogin}>
+        <InputField
+          label={t.EMAIL}
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          placeholder="email@ejemplo.com"
+          required
+          icon={Mail}
+        />
+        <InputField
+          label={t.PASSWORD}
+          type="password"
+          name="password"
+          value={formData.password}
+          onChange={handleInputChange}
+          placeholder="********"
+          required
+          icon={Lock}
+        />
+
+        {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
+
+        <PrimaryButton type="submit" disabled={loading} icon={loading ? Loader2 : LogIn}>
+          {loading ? 'Cargando...' : t.LOGIN_BUTTON}
+        </PrimaryButton>
+      </form>
+
+      <div className={`mt-6 text-center text-sm space-y-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+        <a href="#" className="hover:text-emerald-400 transition-colors block">{t.FORGOT_PASSWORD}</a>
+        <button onClick={() => setIsRegistering(true)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors block w-full">
+          {t.REGISTER_TITLE}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderRegisterEmailStep = () => (
+    <div className={commonCardStyle}>
+      <h2 className="text-3xl font-extrabold text-center mb-6">{t.REGISTER_TITLE}</h2>
+      <p className={`mb-6 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+        {t.ENTER_EMAIL_CONTINUE}
+      </p>
+
+      <form onSubmit={handleRegisterStepOne}>
+        <InputField
+          label={t.EMAIL}
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          placeholder="email@ejemplo.com"
+          required
+          icon={Mail}
+        />
+
+        {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
+
+        <PrimaryButton type="submit" icon={CornerDownRight}>
+          Continuar
+        </PrimaryButton>
+      </form>
+
+      <div className="mt-6 text-center">
+        <button onClick={() => setIsRegistering(false)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors text-sm">
+          {t.BACK_TO_LOGIN}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderFullRegistrationForm = () => (
+    <div className={`${commonCardStyle} max-w-md`}>
+      <h2 className="text-3xl font-extrabold text-center mb-6">{t.REGISTER_TITLE}</h2>
+      <p className={`mb-4 text-center font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.EMAIL}: {formData.email}</p>
+
+      <form onSubmit={handleRegisterStepTwo} className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <InputField
+            label={t.FIRST_NAME}
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            placeholder="Juan"
+            required
+            icon={User}
+          />
+          <InputField
+            label={t.LAST_NAME}
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            placeholder="Pérez"
+            required
+            icon={User}
+          />
+        </div>
+        <InputField
+          label={t.PHONE_NUMBER}
+          name="phone"
+          type="tel"
+          value={formData.phone}
+          onChange={handleInputChange}
+          placeholder="(555) 123-4567"
+          required
+          icon={Phone}
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <InputField
+            label={t.PASSWORD}
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            placeholder="********"
+            required
+            icon={Lock}
+          />
+          <InputField
+            label={t.CONFIRM_PASSWORD}
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            placeholder="********"
+            required
+            icon={Lock}
+          />
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.MEMBER_STATUS}</label>
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="isMember"
+                value="member"
+                checked={formData.isMember === 'member'}
+                onChange={handleInputChange}
+                className="form-radio text-emerald-600 focus:ring-emerald-500 h-5 w-5"
+              />
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{t.MEMBER}</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="isMember"
+                value="visitor"
+                checked={formData.isMember === 'visitor'}
+                onChange={handleInputChange}
+                className="form-radio text-emerald-600 focus:ring-emerald-500 h-5 w-5"
+              />
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{t.VISITOR}</span>
+            </label>
+          </div>
+        </div>
+
+        {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
+
+        <PrimaryButton type="submit" disabled={loading} icon={loading ? Loader2 : UserPlus}>
+          {loading ? 'Enviando...' : t.REGISTER_BUTTON}
+        </PrimaryButton>
+      </form>
+      <div className="mt-6 text-center">
+        <button onClick={() => setIsRegistering(false)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors text-sm">
+          {t.BACK_TO_LOGIN}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex items-center justify-center min-h-screen p-4 z-10 relative">
+      <BackgroundVideo theme={theme} />
+      {isRegistering
+        ? (emailStep ? renderRegisterEmailStep() : renderFullRegistrationForm())
+        : renderLoginForm()}
+    </div>
+  );
+};
+
+// --- COMPONENTES DE MENÚ Y SECCIONES ---
+
+// Icono del Menú Principal
+const MainMenuItem = ({ title, icon: Icon, onClick }) => {
+  const { theme } = useAppContext();
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/50
+        ${theme === 'dark' ? 'bg-gray-700/80 text-white shadow-lg' : 'bg-white/90 text-gray-800 shadow-xl'} backdrop-blur-sm`}
+    >
+      <Icon className="w-8 h-8 md:w-10 md:h-10 text-emerald-400 mb-2" />
+      <span className="text-xs font-semibold text-center mt-1">{title}</span>
+    </button>
+  );
+};
+
+// 3. Muro de Oración (Mejorado)
+const PrayerSection = ({ setCurrentScreen }) => {
+  const { db, userId, t, theme, getCollectionPath } = useAppContext();
+  const [prayerText, setPrayerText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [prayerCount, setPrayerCount] = useState(0);
+  const [prayerWall, setPrayerWall] = useState([]);
+
+  // Obtener el conteo y las peticiones en tiempo real
+  useEffect(() => {
+    if (!db) return;
+    const publicPrayerPath = getCollectionPath('prayer_requests', true);
+    const q = query(collection(db, publicPrayerPath), orderBy("timestamp", "desc"), limit(10));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPrayerCount(snapshot.size);
+      const wall = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Mock the user ID for simplicity as we don't fetch user profiles here
+        displayUserId: doc.data().userId.substring(0, 8) + '...',
+      }));
+      setPrayerWall(wall);
+    }, (error) => {
+      console.error("Error fetching prayer data:", error);
+    });
+
+    return () => unsubscribe();
+  }, [db, getCollectionPath]);
+
+  // Enviar nueva petición de oración
+  const handleSubmitPrayer = async () => {
+    if (prayerText.trim() === "") return;
+
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const publicPrayerPath = getCollectionPath('prayer_requests', true);
+      await addDoc(collection(db, publicPrayerPath), {
+        text: prayerText.trim(),
+        userId: userId,
+        timestamp: new Date().toISOString(),
+      });
+      setPrayerText('');
+      setMessage({ type: 'success', text: t.PRAYER_SUCCESS });
+    } catch (error) {
+      console.error("Error submitting prayer:", error);
+      setMessage({ type: 'error', text: t.REGISTER_ERROR });
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+  const wallStyle = `p-4 rounded-lg border-l-4 border-emerald-500 mb-2 ${theme === 'dark' ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100 text-gray-700'}`;
+
+  return (
+    <div className="p-4 space-y-6 max-w-2xl mx-auto">
+      <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_PRAYER_WALL}</h3>
+
+      {/* Sección de Solicitud Personal */}
+      <div className={cardStyle}>
+        <h4 className={`text-xl font-semibold mb-3 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_REQUEST}</h4>
+        <textarea
+          value={prayerText}
+          onChange={(e) => setPrayerText(e.target.value)}
+          placeholder={t.ENTER_PRAYER_TEXT}
+          rows="4"
+          className={`w-full p-3 border rounded-xl focus:ring-emerald-500 focus:border-emerald-500 transition-colors
+            ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+        />
+        {message && (
+          <p className={`mt-2 text-center text-sm ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{message.text}</p>
+        )}
+        <PrimaryButton onClick={handleSubmitPrayer} disabled={isSubmitting || prayerText.trim() === ""} className="mt-4" icon={HeartHandshake}>
+          {isSubmitting ? 'Enviando...' : t.SUBMIT_PRAYER}
+        </PrimaryButton>
+      </div>
+
+      {/* Muro de Oración de la Comunidad */}
+      <div className={cardStyle}>
+        <h4 className={`text-xl font-semibold mb-4 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_WALL_REQUESTS} ({t.PRAYER_COUNT}: {prayerCount})</h4>
+        {prayerWall.length === 0 ? (
+          <p className="text-center italic text-gray-500">No hay peticiones recientes.</p>
+        ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {prayerWall.map((req) => (
+              <div key={req.id} className={wallStyle}>
+                <p className="font-medium">{req.text}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Usuario: {req.displayUserId} | {new Date(req.timestamp).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">
+        Volver
+      </PrimaryButton>
+    </div>
+  );
+};
+
+// 4. Secciones de Información Específica
+
+// 4.1. Iglesias Afiliadas (No Cambia)
+const ChurchScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const churches = [
+        { name: "Iglesia Central Resucitada", pastor: "Pst. Juan Pérez", photo: "https://placehold.co/100x100/10b981/ffffff?text=P1", address: "Calle Falsa 123, Ciudad", postal: "01001", email: "central@radio.org", phone: "+503 2222-1111", country: "El Salvador" },
+        { name: "Sede Oriental", pastor: "Pst. Ana Gómez", photo: "https://placehold.co/100x100/10b981/ffffff?text=P2", address: "Blvd. Oriente #45, Ciudad", postal: "02002", email: "oriente@radio.org", phone: "+504 3333-2222", country: "Honduras" },
+    ];
+    const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-4xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.CHURCHES_TITLE}</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+                {churches.map((church, index) => (
+                    <div key={index} className={cardStyle}>
+                        <div className="flex space-x-4 mb-4 items-center border-b pb-4 border-gray-700">
+                            <img src={church.photo} alt={`Foto ${church.pastor}`} className="w-16 h-16 rounded-full object-cover"/>
+                            <div>
+                                <h4 className="font-bold text-xl text-emerald-400">{church.name}</h4>
+                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Pastor: {church.pastor}</p>
+                            </div>
+                        </div>
+                        <div className={`space-y-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <p className="flex items-center space-x-2"><MapPin className="w-4 h-4 text-emerald-500"/><span>{church.address}, {church.country} ({church.postal})</span></p>
+                            <p className="flex items-center space-x-2"><Mail className="w-4 h-4 text-emerald-500"/><span>{church.email}</span></p>
+                            <p className="flex items-center space-x-2"><Phone className="w-4 h-4 text-emerald-500"/><span>{church.phone}</span></p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+// 4.2. Ministerios (Actualizado con Modal)
+const MinistriesScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const [selectedMinistry, setSelectedMinistry] = useState(null);
+
+    // Mock de datos con la información adicional solicitada
+    const ministriesData = [
+        { title: t.MINISTRY_ALABANZA, icon: Zap, leader: "María Sol", phone: "+503 7777-1111", cellAddress: "Auditorio Principal, Lunes 7pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Alabanza" },
+        { title: t.MINISTRY_YOUTH, icon: Users, leader: "Carlos Reyes", phone: "+503 7777-1112", cellAddress: "Salón Joven, Sábado 4pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Jovenes" },
+        { title: t.MINISTRY_PREYOUTH, icon: UserPlus, leader: "Brenda Cruz", phone: "+503 7777-1113", cellAddress: "Aula 3, Domingo 10am", photo: "https://placehold.co/150x150/059669/ffffff?text=PreJovenes" },
+        { title: t.MINISTRY_MEN, icon: User, leader: "Roberto López", phone: "+503 7777-1114", cellAddress: "Comedor, Jueves 8pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Caballeros" },
+        { title: t.MINISTRY_WOMEN, icon: User, leader: "Elena Castro", phone: "+503 7777-1115", cellAddress: "Salón Rosa, Miércoles 6pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Damas" },
+        { title: t.MINISTRY_USHERS, icon: Home, leader: "David Martínez", phone: "+503 7777-1116", cellAddress: "Vestíbulo, Viernes 5pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Ujieres" },
+        { title: t.MINISTRY_CHILDREN, icon: HeartHandshake, leader: "Sofia Flores", phone: "+503 7777-1117", cellAddress: "Escuela Dominical, Domingo 9am", photo: "https://placehold.co/150x150/059669/ffffff?text=Ninios" },
+        { title: t.MINISTRY_EVANGELISM, icon: Globe, leader: "Andrés Vela", phone: "+503 7777-1118", cellAddress: "Punto de Misión, Sábado 2pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Evangelismo" },
+    ];
+    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:bg-emerald-100/20 cursor-pointer`;
+
+    const DetailModal = () => (
+        <Modal
+            isOpen={!!selectedMinistry}
+            onClose={() => setSelectedMinistry(null)}
+            title={`${selectedMinistry?.title} - ${t.DETAIL}`}
+        >
+            <div className="flex flex-col items-center space-y-4 pt-4">
+                <img src={selectedMinistry?.photo} alt={selectedMinistry?.title} className="w-32 h-32 rounded-full object-cover border-4 border-emerald-500 shadow-lg"/>
+                <div className={`text-center space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <p className="text-xl font-bold text-emerald-400">{t.LEADER}: {selectedMinistry?.leader}</p>
+                    <p className="flex items-center space-x-2 justify-center"><Phone className="w-4 h-4 text-emerald-500"/><span>{selectedMinistry?.phone}</span></p>
+                    <p className="flex items-center space-x-2 justify-center"><Hash className="w-4 h-4 text-emerald-500"/><span>{t.CELL_ADDRESS}: {selectedMinistry?.cellAddress}</span></p>
+                </div>
+                <PrimaryButton onClick={() => setSelectedMinistry(null)} className="mt-4 bg-gray-600 hover:bg-gray-700 w-full max-w-xs">{t.CLOSE}</PrimaryButton>
+            </div>
+        </Modal>
+    );
+
+    return (
+        <div className="p-4 space-y-6 max-w-xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MINISTRIES_TITLE}</h3>
+            <div className="grid grid-cols-2 gap-4">
+                {ministriesData.map((min, index) => (
+                    <button key={index} onClick={() => setSelectedMinistry(min)} className={`${cardStyle} text-left`}>
+                        <min.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                        <span className="font-semibold text-sm">{min.title}</span>
+                    </button>
+                ))}
+            </div>
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+            {selectedMinistry && <DetailModal />}
+        </div>
+    );
+};
+
+
+// 4.3. Plan de Lectura (No Cambia)
+const ReadingPlanScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_READING_PLAN}</h3>
+
+            <div className={cardStyle}>
+                <h4 className="text-xl font-bold text-emerald-500 flex items-center space-x-2"><BookOpen className="w-5 h-5"/><span>{t.READING_PLAN_BIBLE}</span></h4>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Accede a planes de 90 días, un año o temáticos. (Simulación: Ir a PDF o link externo)</p>
+                <PrimaryButton className="!py-2 bg-emerald-700 hover:bg-emerald-800">Ver Planes</PrimaryButton>
+            </div>
+            <div className={cardStyle}>
+                <h4 className="text-xl font-bold text-emerald-500 flex items-center space-x-2"><AlignJustify className="w-5 h-5"/><span>{t.READING_PLAN_STUDY}</span></h4>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Material de estudio de libros o temas específicos. (Simulación: Descargar PDFs)</p>
+                <PrimaryButton className="!py-2 bg-emerald-700 hover:bg-emerald-800">Ver Estudios</PrimaryButton>
+            </div>
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+// 4.4. Noticias (No Cambia)
+const NewsScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const newsData = [
+        { title: t.NEWS_GATHERING, content: "Resumen de las últimas noticias y testimonios de la obra.", link: "#" },
+        { title: t.NEWS_EVENTS, content: "Información detallada sobre los eventos próximos y las fechas clave.", link: "#" },
+        { title: "Reporte Misionero", content: "Noticias del campo misionero internacional.", link: "#" },
+    ];
+    const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-2xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_NEWS}</h3>
+
+            {newsData.map((item, index) => (
+                <a key={index} href={item.link} target="_blank" className={`${cardStyle} block hover:ring-2 ring-emerald-500`}>
+                    <h4 className="font-bold text-xl text-emerald-500 mb-1">{item.title}</h4>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{item.content}</p>
+                    <span className="text-xs text-emerald-600 mt-2 block">Leer más...</span>
+                </a>
+            ))}
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+// 4.5. Mensajes (Links - No Cambia)
+const MessagesScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const messages = [
+        { title: "El Poder de la Fe (Youtube)", link: "https://youtube.com/user/radioresucitada", date: "2025-01-15", icon: Video },
+        { title: "Avivamiento en Casa (Facebook)", link: "https://facebook.com/radioresucitada", date: "2025-01-08", icon: Facebook },
+        { title: "Serie: Profecía (Twitch)", link: "https://twitch.tv/radioresucitada", date: "2024-12-29", icon: Video },
+    ];
+    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:ring-2 ring-emerald-500`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_MESSAGES}</h3>
+
+            {messages.map((msg, index) => (
+                <a key={index} href={msg.link} target="_blank" className={`${cardStyle} block`}>
+                    <msg.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                    <div className="flex-grow">
+                        <p className="font-semibold text-base text-emerald-400">{msg.title}</p>
+                        <p className="text-xs text-gray-500">{new Date(msg.date).toLocaleDateString()}</p>
+                    </div>
+                </a>
+            ))}
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+// 4.6. En Vivos / Estudio Bíblico (Twitch Player - No Cambia)
+const LiveAndBibleStudyScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const twitchChannel = "radioresucitada"; // Reemplazar con el canal real
+
+    return (
+        <div className="p-4 space-y-6 max-w-4xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_LIVE} & {t.MENU_BIBLE_STUDY}</h3>
+
+            <div className={`p-6 rounded-xl shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+                <p className="text-xl font-semibold text-emerald-500 mb-4">{t.TWITCH_LIVE} {twitchChannel}</p>
+                <div className="aspect-video w-full">
+                    {/* Twitch Embed Player */}
+                    <iframe
+                        src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=localhost&muted=false&autoplay=true`}
+                        height="100%"
+                        width="100%"
+                        allowFullScreen
+                        title="Twitch Live Stream"
+                        className="rounded-lg border-2 border-emerald-500"
+                    ></iframe>
+                </div>
+                <p className={`mt-4 text-sm text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    El Estudio Bíblico se transmite aquí los miércoles.
+                </p>
+            </div>
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+// 4.7. Devocionales (No Cambia)
+const DevotionalScreen = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const devotionals = [
+        { title: "Devocional de Hoy: 'Paz que Sobrepasa'", type: "Texto", icon: Sun, link: "#" },
+        { title: "Lista de Alabanzas (Spotify Link)", type: t.DEVOTIONAL_MUSIC, icon: Zap, link: "#" },
+        { title: "Letra de Coros: 'Grande es Tu Amor'", type: "Letras", icon: AlignJustify, link: "#" },
+    ];
+    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:ring-2 ring-emerald-500`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_DEVOCIONAL}</h3>
+
+            {devotionals.map((dev, index) => (
+                <a key={index} href={dev.link} target="_blank" className={`${cardStyle} block`}>
+                    <dev.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                    <div className="flex-grow">
+                        <p className="font-semibold text-base text-emerald-400">{dev.title}</p>
+                        <p className="text-xs text-gray-500">{dev.type}</p>
+                    </div>
+                </a>
+            ))}
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+
+// 4.8. Plan de Oración (Configuración de Recordatorios - No Cambia)
+const PrayerPlanConfig = ({ setCurrentScreen }) => {
+    const { t, theme } = useAppContext();
+    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const [selectedDays, setSelectedDays] = useState([]);
+    const [selectedHour, setSelectedHour] = useState('08:00');
+    const [message, setMessage] = useState(null);
+
+    const handleDayToggle = (day) => {
+        setSelectedDays(prev =>
+            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+        );
+    };
+
+    const handleConfirmPlan = () => {
+        // En una app real, esto guardaría la configuración en Firestore
+        // y configuraría las notificaciones push en el dispositivo.
+        console.log("Plan Confirmado:", { days: selectedDays, time: selectedHour });
+
+        if (selectedDays.length === 0) {
+            setMessage({ type: 'error', text: "Debe seleccionar al menos un día." });
+            return;
+        }
+
+        setMessage({
+            type: 'success',
+            text: `Plan de oración configurado para las ${selectedHour} los días: ${selectedDays.join(', ')}.`,
+        });
+        setTimeout(() => setMessage(null), 5000);
+    };
+
+    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+
+    return (
+        <div className="p-4 space-y-6 max-w-xl mx-auto">
+            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_PRAYER_PLAN}</h3>
+
+            <div className={cardStyle}>
+                <div className="text-center">
+                    <img src="https://placehold.co/100x100/10b981/ffffff?text=Oración" alt="Logo Oración" className="mx-auto mb-4 rounded-lg"/>
+                    <h4 className="text-2xl font-bold text-emerald-500">{t.PRAYER_PLAN_CONFIG}</h4>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Selección de Días */}
+                    <div>
+                        <label className={`block text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_PLAN_DAY}</label>
+                        <div className="grid grid-cols-4 gap-2">
+                            {days.map(day => (
+                                <button
+                                    key={day}
+                                    onClick={() => handleDayToggle(day)}
+                                    className={`p-2 rounded-lg text-sm font-semibold transition-colors
+                                        ${selectedDays.includes(day)
+                                            ? 'bg-emerald-500 text-white shadow-md'
+                                            : 'bg-gray-600/50 text-gray-300 hover:bg-gray-700'}`
+                                    }
+                                >
+                                    {day.substring(0, 3)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Selección de Hora */}
+                    <div>
+                        <label className={`block text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_PLAN_HOUR}</label>
+                        <InputField
+                            type="time"
+                            value={selectedHour}
+                            onChange={(e) => setSelectedHour(e.target.value)}
+                            icon={Clock}
+                            name="time"
+                        />
+                    </div>
+                </div>
+
+                {message && (
+                    <p className={`mt-4 text-center font-medium ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{message.text}</p>
+                )}
+
+                <PrimaryButton onClick={handleConfirmPlan} icon={Send}>
+                    {t.CONFIRM_PLAN}
+                </PrimaryButton>
+                <PrimaryButton className="bg-emerald-700 hover:bg-emerald-800 !py-2 !text-base" icon={Calendar}>
+                    {t.NEW_PLAN}
+                </PrimaryButton>
+            </div>
+
+            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
+        </div>
+    );
+};
+
+
+// 5. Eventos y Detalle (Actualizado con CalendarView)
+
+// Helper para obtener el primer día del mes y el número total de días
+const getCalendarDetails = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
+    const daysInMonth = lastDayOfMonth.getDate();
+
+    return { year, month, firstDayOfMonth, daysInMonth, startDayOfWeek };
+};
+
+// Componente de Calendario
+const CalendarView = ({ events, selectedDate, setSelectedDate, onEventClick }) => {
+    const { t, theme } = useAppContext();
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    const { year, month, daysInMonth, startDayOfWeek } = getCalendarDetails(currentDate);
+
+    // Mapear eventos por fecha para búsqueda rápida: "YYYY-MM-DD" -> [event1, event2]
+    const eventsByDate = events.reduce((acc, event) => {
+        const dateKey = event.date; // already "YYYY-MM-DD"
+        acc[dateKey] = acc[dateKey] ? [...acc[dateKey], event] : [event];
+        return acc;
+    }, {});
+
+    const daysArray = [];
+    // Relleno de días vacíos del mes anterior
+    for (let i = 0; i < startDayOfWeek; i++) {
+        daysArray.push(null);
+    }
+
+    // Días del mes actual
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvent = !!eventsByDate[dateKey];
+        const isSelected = selectedDate && selectedDate.toDateString() === date.toDateString();
+        
+        daysArray.push({ date, day, hasEvent, isSelected, dateKey });
+    }
+
+    // Navegación
+    const changeMonth = (amount) => {
+        const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + amount));
+        setCurrentDate(newDate);
+        setSelectedDate(null); // Reset selection when month changes
+    };
+
+    const handleDayClick = (dayObj) => {
+        if (!dayObj) return;
+        setSelectedDate(dayObj.date);
+    };
+
+    const headerClass = `text-center py-2 font-bold text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`;
+    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+
+    return (
+        <div className={cardStyle}>
+            {/* Header de Navegación */}
+            <div className="flex justify-between items-center mb-4">
+                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full text-emerald-500 hover:bg-emerald-500/10 transition-colors"><ChevronLeft className="w-6 h-6"/></button>
+                <h4 className="text-xl font-bold text-emerald-400">
+                    {t.MONTH_NAMES[month]} {year}
+                </h4>
+                <button onClick={() => changeMonth(1)} className="p-2 rounded-full text-emerald-500 hover:bg-emerald-500/10 transition-colors"><ChevronRight className="w-6 h-6"/></button>
+            </div>
+
+            {/* Días de la semana */}
+            <div className="grid grid-cols-7 gap-1">
+                {t.DAY_NAMES_SHORT.map(dayName => (
+                    <div key={dayName} className={headerClass}>{dayName}</div>
+                ))}
+            </div>
+
+            {/* Días del mes */}
+            <div className="grid grid-cols-7 gap-1">
+                {daysArray.map((dayObj, index) => (
+                    <div
+                        key={index}
+                        onClick={() => handleDayClick(dayObj)}
+                        className={`aspect-square flex flex-col items-center justify-center p-1 rounded-lg transition-all text-sm font-semibold
+                            ${!dayObj ? 'bg-transparent' : 
+                                dayObj.isSelected ? 'bg-emerald-500 text-white shadow-lg transform scale-105' :
+                                dayObj.hasEvent ? (theme === 'dark' ? 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50' : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200') :
+                                (theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-100')
+                            }
+                            ${dayObj && 'cursor-pointer'}`}
+                    >
+                        {dayObj ? dayObj.day : ''}
+                        {dayObj && dayObj.hasEvent && !dayObj.isSelected && (
+                            <div className="w-1.5 h-1.5 bg-red-400 rounded-full mt-1"></div> // Punto rojo para indicar evento
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Lista de Eventos Seleccionados */}
+            {selectedDate && (
+                <div className={`mt-6 p-4 rounded-xl border-t-4 border-emerald-500 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <p className="font-bold text-lg mb-3">{t.EVENTS_FOR} {selectedDate.toLocaleDateString(t.language)}:</p>
+                    {
+                        (eventsByDate[selectedDate.toISOString().split('T')[0]] || []).length > 0 ? (
+                            <ul className="space-y-2">
+                                {(eventsByDate[selectedDate.toISOString().split('T')[0]] || []).map(event => (
+                                    <li 
+                                        key={event.id} 
+                                        onClick={() => onEventClick(event)}
+                                        className="text-emerald-400 font-medium cursor-pointer hover:underline text-sm flex items-center space-x-2"
+                                    >
+                                        <Calendar className="w-4 h-4 flex-shrink-0"/>
+                                        <span>{event[`title_${t.language}`]}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-500 italic text-sm">{t.NO_EVENTS}</p>
+                        )
+                    }
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+const EventsListScreen = ({ setCurrentScreen, setSelectedEvent }) => {
+  const { db, t, theme, getCollectionPath } = useAppContext();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(null);
+
+  // Mock de datos de eventos para el calendario.
+  useEffect(() => {
+    // Generar 3 eventos aleatorios en el mes actual y 1 en el siguiente.
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    const mockEvents = [
+        { id: '1', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-05`, title_es: 'Estudio Profundo de la Palabra', title_en: 'In-Depth Word Study', description_es: 'Comienzo de nueva serie de estudios.', description_en: 'Start of a new study series.', icon: 'BookOpen', photo: "https://placehold.co/600x300/10b981/ffffff?text=Estudio"},
+        { id: '2', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-15`, title_es: 'Concierto de Alabanza', title_en: 'Praise Concert', description_es: 'Noche de adoración con el ministerio de alabanza.', description_en: 'Worship night with the praise ministry.', icon: 'Zap', photo: "https://placehold.co/600x300/10b981/ffffff?text=Concierto"},
+        { id: '3', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-28`, title_es: 'Vigilia de Oración', title_en: 'Prayer Vigil', description_es: 'Noche de intercesión por la obra y los hermanos.', description_en: 'Night of intercession for the work and brethren.', icon: 'HeartHandshake', photo: "https://placehold.co/600x300/10b981/ffffff?text=Vigilia"},
+        // Evento en el mes siguiente
+        { id: '4', date: `${currentYear}-${String(currentMonth + 2).padStart(2, '0')}-10`, title_es: 'Campaña Evangelística', title_en: 'Evangelistic Campaign', description_es: 'Lanzamiento de la gran campaña anual.', description_en: 'Launch of the great annual campaign.', icon: 'Globe', photo: "https://placehold.co/600x300/10b981/ffffff?text=Campana"},
+    ];
+
+    if (!db) {
+        setEvents(mockEvents);
+        setLoading(false);
+        return;
+    }
+    // Lógica real de Firestore aquí... (omitiendo por la limitación de la implementación de la db)
+    setEvents(mockEvents);
+    setLoading(false);
+
+    // return () => unsubscribe(); // Si se usara onSnapshot
+  }, [db, getCollectionPath]);
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setCurrentScreen('eventDetail');
+  };
+
+  if (loading) return <div className="p-8 text-center text-emerald-400"><Loader2 className="animate-spin inline mr-2"/> Cargando Eventos...</div>;
+
+  return (
+    <div className="p-4 sm:p-8">
+      <h2 className="text-4xl font-extrabold text-emerald-400 text-center mb-8">{t.MENU_EVENTS}</h2>
+      
+      <div className="max-w-4xl mx-auto">
+        <CalendarView 
+            events={events} 
+            selectedDate={selectedDate} 
+            setSelectedDate={setSelectedDate}
+            onEventClick={handleEventClick}
+        />
+      </div>
+
+      <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-8 mx-auto w-full max-w-xs bg-gray-600 hover:bg-gray-700">
+        Volver al Menú
+      </PrimaryButton>
+    </div>
+  );
+};
+
+const EventDetailScreen = ({ event, setCurrentScreen }) => {
+  const { t, theme } = useAppContext();
+
+  if (!event) {
+    return <p className="p-8 text-center text-red-400">Error: Evento no encontrado.</p>;
+  }
+
+  return (
+    <div className="p-8">
+      <div className={`p-6 rounded-2xl shadow-2xl max-w-2xl mx-auto transition-colors ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+        <h2 className="text-4xl font-extrabold text-emerald-500 mb-4">{event[`title_${t.language}`]}</h2>
+        <img src={event.photo || "https://placehold.co/600x300/10b981/ffffff?text=Evento"} alt="Foto del Evento" className="w-full h-auto object-cover rounded-lg mb-6"/>
+        <p className="text-xl font-medium mb-6">{new Date(event.date).toLocaleDateString(t.language, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+
+        <p className={`mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{event[`description_${t.language}`]}</p>
+
+        <PrimaryButton onClick={() => setCurrentScreen('events')} className="bg-gray-600 hover:bg-gray-700">
+          Volver a Eventos
+        </PrimaryButton>
+      </div>
+    </div>
+  );
+};
+
+
+// 6. Ajustes y Cerrar Sesión (Actualizado con Toggles)
+const SettingsScreen = ({ setCurrentScreen }) => {
+  const { t, language, setLanguage, theme, setTheme, auth } = useAppContext();
+  
+  // Usamos localStorage para simular la persistencia de notificaciones
+  const [liveNotif, setLiveNotif] = useState(() => localStorage.getItem('notif_live') === 'true');
+  const [eventNotif, setEventNotif] = useState(() => localStorage.getItem('notif_events') === 'true');
+  const [newsNotif, setNewsNotif] = useState(() => localStorage.getItem('notif_news') === 'true');
+
+  const handleToggle = (key, setter, value) => {
+    setter(value);
+    localStorage.setItem(key, value);
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (auth) {
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
+
+  return (
+    <div className="p-8 max-w-xl mx-auto">
+      <h2 className="text-4xl font-extrabold text-emerald-400 text-center mb-8">{t.SETTINGS_TITLE}</h2>
+
+      <div className={`p-6 rounded-2xl shadow-xl space-y-6 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+
+        {/* Selector de Idioma */}
+        <div>
+          <label className={`block text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{t.SETTINGS_LANGUAGE}</label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className={`w-full p-3 border rounded-xl appearance-none cursor-pointer focus:ring-emerald-500 focus:border-emerald-500 transition-colors
+              ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+          >
+            <option value="es">Español</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        {/* Selector de Tema */}
+        <div>
+          <label className={`block text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{t.SETTINGS_THEME}</label>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setTheme('dark')}
+              className={`flex items-center space-x-2 p-3 rounded-xl transition-all ${theme === 'dark' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-800'}`}
+            >
+              <Moon className="w-5 h-5" />
+              <span>Oscuro</span>
+            </button>
+            <button
+              onClick={() => setTheme('light')}
+              className={`flex items-center space-x-2 p-3 rounded-xl transition-all ${theme === 'light' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-800'}`}
+            >
+              <Sun className="w-5 h-5" />
+              <span>Claro</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Toggles de Notificaciones */}
+        <div className="pt-4 border-t border-gray-700/50">
+            <h3 className={`text-xl font-semibold mb-3 flex items-center space-x-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}><Bell className="w-5 h-5"/><span>{t.SETTINGS_NOTIFICATIONS}</span></h3>
+            <div className="space-y-2">
+                <Toggle 
+                    label={t.NOTIF_LIVE} 
+                    checked={liveNotif} 
+                    onChange={(val) => handleToggle('notif_live', setLiveNotif, val)} 
+                />
+                <Toggle 
+                    label={t.NOTIF_EVENTS} 
+                    checked={eventNotif} 
+                    onChange={(val) => handleToggle('notif_events', setEventNotif, val)} 
+                />
+                <Toggle 
+                    label={t.NOTIF_NEWS} 
+                    checked={newsNotif} 
+                    onChange={(val) => handleToggle('notif_news', setNewsNotif, val)} 
+                />
+            </div>
+        </div>
+
+        {/* Botón de Cerrar Sesión */}
+        <PrimaryButton onClick={handleLogout} className="bg-red-600 hover:bg-red-700 mt-6" icon={LogOut}>
+          {t.LOGOUT}
+        </PrimaryButton>
+
+      </div>
+
+      <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-8 mx-auto w-full bg-gray-600 hover:bg-gray-700">
+        Volver al Menú
+      </PrimaryButton>
+    </div>
+  );
+};
+
+
+// 7. Pantalla Principal (Menú - No Cambia)
+const MainScreen = ({ setCurrentScreen, setSelectedEvent }) => {
+  const { t, theme, userId } = useAppContext();
+
+  // Definición de todos los ítems del menú con sus iconos de lucide-react
+  const menuItems = [
+    { title: t.MENU_CHURCH, icon: Home, screen: 'church' },
+    { title: t.MENU_MINISTRIES, icon: Users, screen: 'ministries' },
+    { title: t.MENU_READING_PLAN, icon: BookOpen, screen: 'readingPlan' },
+    { title: t.MENU_NEWS, icon: Newspaper, screen: 'news' },
+    { title: t.MENU_MESSAGES, icon: MessageSquare, screen: 'messages' },
+    { title: t.MENU_LIVE, icon: Video, screen: 'live' },
+    { title: t.MENU_EVENTS, icon: Calendar, screen: 'events' },
+    { title: t.MENU_PRAYER_WALL, icon: HeartHandshake, screen: 'prayerWall' },
+    { title: t.MENU_PRAYER_PLAN, icon: Clock, screen: 'prayerPlan' },
+    { title: t.MENU_BIBLE_STUDY, icon: BookOpen, screen: 'live' }, // Usa 'live' para el reproductor Twitch
+    { title: t.MENU_DEVOCIONAL, icon: Sun, screen: 'devotional' },
+  ];
+
+  // Manejador para la navegación.
+  const handleMenuClick = (item) => {
+    // Si la pantalla es la misma que la del menú, navega directamente.
+    if (item.screen === 'events') setCurrentScreen('events');
+    else if (item.screen === 'prayerWall') setCurrentScreen('prayerWall');
+    else if (item.screen === 'prayerPlan') setCurrentScreen('prayerPlan');
+    else if (item.screen === 'live') setCurrentScreen('live');
+    else if (item.screen === 'church') setCurrentScreen('church');
+    else if (item.screen === 'ministries') setCurrentScreen('ministries');
+    else if (item.screen === 'readingPlan') setCurrentScreen('readingPlan');
+    else if (item.screen === 'news') setCurrentScreen('news');
+    else if (item.screen === 'messages') setCurrentScreen('messages');
+    else if (item.screen === 'devotional') setCurrentScreen('devotional');
+    else {
+      setCurrentScreen('info-generic');
+      setSelectedEvent(item.title); // Usamos setSelectedEvent para almacenar el título genérico
+    }
+  };
+
+  return (
+    <div className={`relative min-h-screen p-4 pt-20 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+      <BackgroundVideo theme={theme} />
+
+      {/* Barra superior con Logo y Menú/Ajustes */}
+      <div className="fixed top-0 left-0 right-0 z-20 p-4 flex justify-between items-center backdrop-blur-md bg-gray-900/50 shadow-lg">
+        {/* Logo Pequeño (Ajustado al color esmeralda) */}
+        <img src="https://placehold.co/50x50/10b981/ffffff?text=R" alt="Logo Pequeño" className="w-10 h-10 rounded-full border-2 border-emerald-400"/>
+        <h1 className="text-xl font-bold text-emerald-400 hidden sm:block">{t.APP_TITLE}</h1>
+        <div className="flex items-center space-x-3">
+          {/* Identificador de Usuario */}
+          <span className="text-xs font-mono p-1 rounded bg-emerald-500/30 text-emerald-100 hidden sm:block">ID: {userId}</span>
+
+          {/* Iconos de Redes Sociales */}
+          <a href="https://facebook.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Facebook className="w-5 h-5"/></a>
+          <a href="https://instagram.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Instagram className="w-5 h-5"/></a>
+          <a href="https://twitch.tv/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Video className="w-5 h-5"/></a>
+          <a href="https://twitter.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Twitter className="w-5 h-5"/></a>
+
+          {/* Botón de Seguir la página de radio (Logo Resucitada) */}
+          <a href="#" target="_blank" className="p-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:ring-2 focus:ring-emerald-400">
+            <Zap className="w-6 h-6" />
+          </a>
+
+          {/* Ajustes */}
+          <button onClick={() => setCurrentScreen('settings')} className="p-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:ring-2 focus:ring-emerald-400">
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      <div className="relative z-10 p-4">
+        <h2 className="text-3xl font-extrabold text-center mb-8 text-shadow-lg text-emerald-400">{t.WELCOME_TITLE}!</h2>
+
+        {/* Grid de Menú Principal */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-w-6xl mx-auto">
+          {menuItems.map((item) => (
+            <MainMenuItem
+              key={item.title}
+              title={item.title}
+              icon={item.icon}
+              onClick={() => handleMenuClick(item)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Pantalla Genérica de Información (Usada para ítems que no requieren lógica compleja - No Cambia)
+const GenericInfoScreen = ({ setCurrentScreen, title }) => {
+  const { t, theme } = useAppContext();
+  return (
+    <div className="p-8 max-w-xl mx-auto">
+      <div className={`p-6 rounded-2xl shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+        <h2 className="text-3xl font-extrabold text-emerald-500 mb-4">{title}</h2>
+        <p className={`mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+          {t.APP_TITLE} - Esta es la página de información para **{title}**. Aquí iría todo el contenido de la subpágina, incluyendo texto, videos y más detalles sobre la sección.
+        </p>
+        <p className="text-sm italic">
+          (Simulación de navegación. El contenido real sería cargado aquí).
+        </p>
+        <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-6 bg-gray-600 hover:bg-gray-700">
+          Volver al Menú
+        </PrimaryButton>
+      </div>
+    </div>
+  );
+};
+
+
+// --- COMPONENTE PRINCIPAL DE LA APLICACIÓN ---
+const AppContent = () => {
+  const { isAuthReady, userId } = useAppContext();
+  const [currentScreen, setCurrentScreen] = useState('loading');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  useEffect(() => {
+    if (isAuthReady) {
+      if (userId) {
+        setCurrentScreen('main');
+      } else {
+        setCurrentScreen('login');
+      }
+    }
+  }, [isAuthReady, userId]);
+
+  useEffect(() => {
+    document.body.setAttribute('data-screen', currentScreen);
+  }, [currentScreen]);
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'login':
+      case 'register':
+        return <AuthScreen setCurrentScreen={setCurrentScreen} />;
+      case 'main':
+        return <MainScreen setCurrentScreen={setCurrentScreen} setSelectedEvent={setSelectedEvent} />;
+      case 'settings':
+        return <SettingsScreen setCurrentScreen={setCurrentScreen} />;
+      case 'events':
+        return <EventsListScreen setCurrentScreen={setCurrentScreen} setSelectedEvent={setSelectedEvent} />;
+      case 'eventDetail':
+        return <EventDetailScreen event={selectedEvent} setCurrentScreen={setCurrentScreen} />;
+      case 'prayerWall':
+        return <PrayerSection setCurrentScreen={setCurrentScreen} />;
+      case 'prayerPlan':
+        return <PrayerPlanConfig setCurrentScreen={setCurrentScreen} />;
+      case 'live':
+        return <LiveAndBibleStudyScreen setCurrentScreen={setCurrentScreen} />;
+      case 'church':
+        return <ChurchScreen setCurrentScreen={setCurrentScreen} />;
+      case 'ministries':
+        return <MinistriesScreen setCurrentScreen={setCurrentScreen} />;
+      case 'readingPlan':
+        return <ReadingPlanScreen setCurrentScreen={setCurrentScreen} />;
+      case 'news':
+        return <NewsScreen setCurrentScreen={setCurrentScreen} />;
+      case 'messages':
+        return <MessagesScreen setCurrentScreen={setCurrentScreen} />;
+      case 'devotional':
+        return <DevotionalScreen setCurrentScreen={setCurrentScreen} />;
+      case 'loading':
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+            <p className="mt-4 text-white">Cargando aplicación...</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen font-sans">
+      <style>{`
+        /* Animación para simular el loop del video/fondo dinámico */
+        @keyframes pulse-slow {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-pulse-slow {
+          background-size: 400% 400%;
+          animation: pulse-slow 20s ease infinite;
+        }
+
+        /* Oculta el scrollbar en pantallas de autenticación */
+        body[data-screen="login"] { overflow: hidden; }
+        body[data-screen="register"] { overflow: hidden; }
+      `}</style>
+      {renderScreen()}
+    </div>
+  );
+};
+
+const App = () => (
+  <AppProvider>
+    <AppContent />
+  </AppProvider>
+);
+
+export default App;
