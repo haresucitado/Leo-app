@@ -1,1598 +1,918 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, addDoc, limit, orderBy } from 'firebase/firestore';
-import { LogIn, UserPlus, Mail, Lock, Phone, CornerDownRight, Menu, Settings, LogOut, Loader2, Home, Users, BookOpen, Newspaper, MessageSquare, Video, Calendar, HeartHandshake, Zap, Sun, Moon, Twitter, Facebook, Instagram, Send, User, MapPin, Globe, Clock, AlignJustify, X, Bell, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Iglesia - Transmisión y Comunidad</title>
+    <!-- Carga de Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Iconos (Lucide Icons) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Configuración global de la fuente Inter y un tema oscuro */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background-color: #0d0d0d; /* Fondo muy oscuro */
+        }
+        /* Color Jade Green para acentos y sombras */
+        .jade-accent {
+            background-color: #10b981; /* Tailwind emerald-500 */
+        }
+        .jade-glow {
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.7), 0 0 20px rgba(16, 185, 129, 0.5);
+            transition: all 0.3s;
+        }
+        .jade-glow-hover:hover {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 1), 0 0 30px rgba(16, 185, 129, 0.7);
+            transform: translateY(-2px);
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
 
-// --- CONFIGURACIÓN Y UTILIDADES DE FIREBASE ---
-// Variables globales proporcionadas por el entorno
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        /* Estilo para el Video de Fondo */
+        #video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -10;
+            filter: brightness(0.4) grayscale(0.2); /* Oscurecer y sutilmente desaturar */
+        }
+        .content-overlay {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+        }
 
-// Contexto de la Aplicación para compartir estado global fácilmente
-const AppContext = createContext();
+        /* Estilo para los botones flotantes del menú principal */
+        .floating-nav-button {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease-in-out;
+        }
+        .menu-open .floating-nav-button {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .menu-open .floating-nav-button:nth-child(1) { transition-delay: 0.1s; }
+        .menu-open .floating-nav-button:nth-child(2) { transition-delay: 0.15s; }
+        .menu-open .floating-nav-button:nth-child(3) { transition-delay: 0.2s; }
+        .menu-open .floating-nav-button:nth-child(4) { transition-delay: 0.25s; }
+        .menu-open .floating-nav-button:nth-child(5) { transition-delay: 0.3s; }
+        .menu-open .floating-nav-button:nth-child(6) { transition-delay: 0.35s; }
+        .menu-open .floating-nav-button:nth-child(7) { transition-delay: 0.4s; }
+        .menu-open .floating-nav-button:nth-child(8) { transition-delay: 0.45s; }
+        
+        /* Estilo para el calendario */
+        .event-day {
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .event-day.has-event {
+            background-color: #065f46; /* dark green */
+            border-color: #10B981;
+        }
+    </style>
+</head>
+<body class="text-white">
 
-// Definición de las traducciones para la internacionalización
-const translations = {
-  es: {
-    APP_TITLE: "Radio Resucitada",
-    WELCOME_TITLE: "Bienvenido",
-    LOGIN_TITLE: "Iniciar Sesión",
-    REGISTER_TITLE: "Crear Cuenta",
-    FORGOT_PASSWORD: "¿Olvidó su contraseña?",
-    EMAIL: "Correo Electrónico",
-    PASSWORD: "Contraseña",
-    CONFIRM_PASSWORD: "Confirmar Contraseña",
-    FIRST_NAME: "Nombre",
-    LAST_NAME: "Apellido",
-    PHONE_NUMBER: "Número de Teléfono",
-    MEMBER_STATUS: "¿Es usted miembro?",
-    MEMBER: "Miembro",
-    VISITOR: "Visitante",
-    LOGIN_BUTTON: "Entrar",
-    REGISTER_BUTTON: "Registrarse",
-    BACK_TO_LOGIN: "Volver a Iniciar Sesión",
-    ENTER_EMAIL_CONTINUE: "Ingrese su email en el campo de abajo para continuar con el registro.",
-    MENU_CHURCH: "Iglesias Afiliadas",
-    MENU_MINISTRIES: "Ministerios",
-    MENU_READING_PLAN: "Plan de Lectura",
-    MENU_NEWS: "Noticias",
-    MENU_MESSAGES: "Mensajes",
-    MENU_LIVE: "En Vivos",
-    MENU_EVENTS: "Eventos",
-    MENU_PRAYER_WALL: "Muro de Oración",
-    MENU_PRAYER_PLAN: "Plan de Oración",
-    MENU_BIBLE_STUDY: "Estudio Bíblico",
-    MENU_DEVOTIONAL: "Devocionales",
-    SETTINGS_TITLE: "Ajustes de la Aplicación",
-    SETTINGS_LANGUAGE: "Idioma",
-    SETTINGS_THEME: "Tema",
-    SETTINGS_NOTIFICATIONS: "Notificaciones",
-    NOTIF_LIVE: "Transmisión en Directo",
-    NOTIF_EVENTS: "Eventos",
-    NOTIF_NEWS: "Noticias",
-    LOGOUT: "Cerrar Sesión",
-    EVENT_DETAIL: "Detalle del Evento",
-    PRAYER_REQUEST: "Petición Personal",
-    PRAYER_COUNT: "Oraciones Recibidas",
-    SUBMIT_PRAYER: "Enviar Petición",
-    ENTER_PRAYER_TEXT: "Ingrese su petición de oración aquí...",
-    PRAYER_SUCCESS: "¡Petición enviada con éxito!",
-    REQUIRED_FIELD: "Este campo es obligatorio.",
-    LOGIN_ERROR: "Error al iniciar sesión. Verifique su correo y contraseña.",
-    REGISTER_ERROR: "Error al registrar. Inténtelo de nuevo.",
-    PASSWORDS_MISMATCH: "Las contraseñas no coinciden.",
-    CHURCHES_TITLE: "Nuestras Iglesias Afiliadas",
-    MINISTRIES_TITLE: "Ministerios de la Obra",
-    MINISTRY_ALABANZA: "Alabanza y Adoración",
-    MINISTRY_YOUTH: "Jóvenes",
-    MINISTRY_PREYOUTH: "Pre-Jóvenes",
-    MINISTRY_MEN: "Caballeros",
-    MINISTRY_WOMEN: "Damas",
-    MINISTRY_USHERS: "Ujieres",
-    MINISTRY_CHILDREN: "Niños",
-    MINISTRY_EVANGELISM: "Evangelismo",
-    READING_PLAN_BIBLE: "Planes de Lectura Bíblica",
-    READING_PLAN_STUDY: "Estudios y Libros",
-    NEWS_GATHERING: "Noticias de la Obra",
-    NEWS_EVENTS: "Próximos Eventos",
-    MESSAGES_LINKS: "Mensajes y Predicaciones Anteriores",
-    LIVE_TWITCH: "Transmisión en Vivo (Twitch)",
-    DEVOTIONAL_CONTENT: "Contenido Devocional Diario",
-    DEVOTIONAL_MUSIC: "Alabanzas y Coros",
-    PRAYER_WALL_REQUESTS: "Peticiones de la Comunidad",
-    PRAYER_PLAN_CONFIG: "Configurar Recordatorio Devocional",
-    PRAYER_PLAN_DAY: "Seleccione Día",
-    PRAYER_PLAN_HOUR: "Seleccione Hora",
-    CONFIRM_PLAN: "Confirmar Plan",
-    NEW_PLAN: "Crear Nuevo Plan",
-    TWITCH_LIVE: "Reproductor en Vivo:",
-    LEADER: "Líder",
-    CELL_ADDRESS: "Dirección de Célula",
-    DETAIL: "Detalle",
-    CLOSE: "Cerrar",
-    MONTH_NAMES: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
-    DAY_NAMES_SHORT: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
-    NO_EVENTS: "No hay eventos para esta fecha.",
-    EVENTS_FOR: "Eventos para",
-    TOGGLE_ON: "Activado",
-    TOGGLE_OFF: "Desactivado",
-  },
-  en: {
-    APP_TITLE: "Resurrected Radio",
-    WELCOME_TITLE: "Welcome",
-    LOGIN_TITLE: "Sign In",
-    REGISTER_TITLE: "Create Account",
-    FORGOT_PASSWORD: "Forgot your password?",
-    EMAIL: "Email Address",
-    PASSWORD: "Password",
-    CONFIRM_PASSWORD: "Confirm Password",
-    FIRST_NAME: "First Name",
-    LAST_NAME: "Last Name",
-    PHONE_NUMBER: "Phone Number",
-    MEMBER_STATUS: "Are you a member?",
-    MEMBER: "Member",
-    VISITOR: "Visitor",
-    LOGIN_BUTTON: "Sign In",
-    REGISTER_BUTTON: "Register",
-    BACK_TO_LOGIN: "Back to Sign In",
-    ENTER_EMAIL_CONTINUE: "Enter your email in the field below to continue registration.",
-    MENU_CHURCH: "Affiliated Churches",
-    MENU_MINISTRIES: "Ministries",
-    MENU_READING_PLAN: "Reading Plan",
-    MENU_NEWS: "News",
-    MENU_MESSAGES: "Messages",
-    MENU_LIVE: "Live Streams",
-    MENU_EVENTS: "Events",
-    MENU_PRAYER_WALL: "Prayer Wall",
-    MENU_PRAYER_PLAN: "Prayer Plan",
-    MENU_BIBLE_STUDY: "Bible Study",
-    MENU_DEVOTIONAL: "Devotional",
-    SETTINGS_TITLE: "App Settings",
-    SETTINGS_LANGUAGE: "Language",
-    SETTINGS_THEME: "Theme",
-    SETTINGS_NOTIFICATIONS: "Notifications",
-    NOTIF_LIVE: "Live Stream",
-    NOTIF_EVENTS: "Events",
-    NOTIF_NEWS: "News",
-    LOGOUT: "Logout",
-    EVENT_DETAIL: "Event Details",
-    PRAYER_REQUEST: "Personal Request",
-    PRAYER_COUNT: "Prayers Received",
-    SUBMIT_PRAYER: "Submit Request",
-    ENTER_PRAYER_TEXT: "Enter your prayer request here...",
-    PRAYER_SUCCESS: "Request sent successfully!",
-    REQUIRED_FIELD: "This field is required.",
-    LOGIN_ERROR: "Sign in error. Check your email and password.",
-    REGISTER_ERROR: "Registration error. Please try again.",
-    PASSWORDS_MISMATCH: "Passwords do not match.",
-    CHURCHES_TITLE: "Our Affiliated Churches",
-    MINISTRIES_TITLE: "Work Ministries",
-    MINISTRY_ALABANZA: "Praise and Worship",
-    MINISTRY_YOUTH: "Youth",
-    MINISTRY_PREYOUTH: "Pre-Youth",
-    MINISTRY_MEN: "Men's Ministry",
-    MINISTRY_WOMEN: "Women's Ministry",
-    MINISTRY_USHERS: "Ushers Ministry",
-    MINISTRY_CHILDREN: "Children's Ministry",
-    MINISTRY_EVANGELISM: "Evangelism Ministry",
-    READING_PLAN_BIBLE: "Bible Reading Plans",
-    READING_PLAN_STUDY: "Studies and Books",
-    NEWS_GATHERING: "Work News",
-    NEWS_EVENTS: "Upcoming Events",
-    MESSAGES_LINKS: "Past Messages and Sermons",
-    LIVE_TWITCH: "Live Stream (Twitch)",
-    DEVOTIONAL_CONTENT: "Daily Devotional Content",
-    DEVOTIONAL_MUSIC: "Praise and Chorus Songs",
-    PRAYER_WALL_REQUESTS: "Community Requests",
-    PRAYER_PLAN_CONFIG: "Configure Devotional Reminder",
-    PRAYER_PLAN_DAY: "Select Day",
-    PRAYER_PLAN_HOUR: "Select Time",
-    CONFIRM_PLAN: "Confirm Plan",
-    NEW_PLAN: "Create New Plan",
-    TWITCH_LIVE: "Live Player:",
-    LEADER: "Leader",
-    CELL_ADDRESS: "Cell Address",
-    DETAIL: "Detail",
-    CLOSE: "Close",
-    MONTH_NAMES: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-    DAY_NAMES_SHORT: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    NO_EVENTS: "No events for this date.",
-    EVENTS_FOR: "Events for",
-    TOGGLE_ON: "On",
-    TOGGLE_OFF: "Off",
-  }
-};
+    <!-- Video de Fondo Continuo -->
+    <video autoplay loop muted id="video-background">
+        <!-- Reemplaza con la URL de tu video. Usamos un placeholder de muestra por ahora. -->
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-dark-blue-and-purple-ink-drops-30114-large.mp4" type="video/mp4">
+        Tu navegador no soporta videos en HTML5.
+    </video>
 
-const AppProvider = ({ children }) => {
-  const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
-  const [userId, setUserId] = useState(null);
-  const [language, setLanguage] = useState('es');
-  const [theme, setTheme] = useState('dark'); // 'dark' or 'light'
-  const t = translations[language];
+    <!-- Contenido Principal Superpuesto -->
+    <div class="content-overlay">
 
-  // 1. Inicialización y Autenticación de Firebase
-  useEffect(() => {
-    try {
-      const app = initializeApp(firebaseConfig);
-      const firestore = getFirestore(app);
-      const authInstance = getAuth(app);
-      setDb(firestore);
-      setAuth(authInstance);
+        <!-- Banner Superior (Radio Logo y Nombre) -->
+        <header class="p-4 flex justify-between items-center bg-black bg-opacity-70 shadow-2xl sticky top-0 z-50">
+            <div class="flex items-center space-x-3 jade-text-glow">
+                <i data-lucide="radio" class="w-8 h-8 text-emerald-500"></i>
+                <h1 class="text-3xl font-extrabold tracking-widest uppercase text-emerald-300">Radio Visión</h1>
+            </div>
 
-      // Listener para el estado de autenticación
-      const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-        if (user) {
-          setUserId(user.uid);
-          if (document.body.getAttribute('data-screen') === 'loading') {
-            document.body.setAttribute('data-screen', 'main');
-          }
+            <!-- Botón de Ajustes (Flotante Superior Derecha) -->
+            <button onclick="toggleModal('settingsModal')" class="p-3 jade-accent rounded-full jade-glow jade-glow-hover transition duration-300" title="Ajustes">
+                <i data-lucide="settings" class="w-6 h-6 text-gray-900"></i>
+            </button>
+        </header>
+
+        <!-- Sección de Contenido Principal (A modo de ejemplo) -->
+        <main class="p-8 md:p-16 text-center">
+            <div class="bg-black bg-opacity-70 p-6 md:p-12 rounded-xl max-w-4xl mx-auto border-4 border-emerald-500 jade-glow">
+                <h2 class="text-4xl md:text-6xl font-black mb-4 text-emerald-300 jade-text-glow">Bienvenido a Nuestro Hogar Digital</h2>
+                <p class="text-xl text-gray-300">Conéctate a la transmisión en vivo, explora nuestros ministerios y únete a nuestra comunidad de fe.</p>
+                <div class="mt-8">
+                    <!-- Botón Destacado para la Transmisión -->
+                    <button onclick="showTwitchStream()" class="px-8 py-4 jade-accent text-gray-900 font-bold text-lg rounded-full shadow-2xl hover:bg-emerald-400 transition transform hover:scale-105">
+                        <i data-lucide="zap" class="inline-block mr-2 w-5 h-5"></i> ¡Ver Transmisión en Vivo Ahora!
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Muro de Oración (Prayer Wall) -->
+        <section id="prayer-wall" class="p-8 md:p-16 max-w-4xl mx-auto hidden">
+            <h2 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Muro de Oración</h2>
+            <div class="bg-gray-800 p-6 rounded-xl shadow-inner mb-6">
+                <form id="prayer-form">
+                    <textarea id="prayer-request" class="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-emerald-500 focus:border-emerald-500 border-none" rows="3" placeholder="Escribe tu petición de oración aquí..." required></textarea>
+                    <button type="submit" class="mt-4 px-6 py-2 jade-accent text-gray-900 font-bold rounded-lg jade-glow-hover">Enviar Petición</button>
+                    <p id="prayer-status" class="mt-2 text-sm text-emerald-400"></p>
+                </form>
+            </div>
+            <div id="prayer-list" class="space-y-4">
+                <!-- Las peticiones se cargarán aquí -->
+                <div class="text-center text-gray-400">Cargando peticiones...</div>
+            </div>
+        </section>
+
+        <!-- Plan Personal de Lectura/Devocional -->
+        <section id="devotional-plan" class="p-8 md:p-16 max-w-4xl mx-auto hidden">
+            <h2 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Configura tu Plan Personal</h2>
+            <div class="bg-gray-800 p-6 rounded-xl shadow-inner">
+                <form id="plan-form">
+                    <div class="mb-4">
+                        <label for="plan-time" class="block mb-2 text-gray-300">Hora de Recordatorio Diario:</label>
+                        <input type="time" id="plan-time" class="w-full p-3 rounded-lg bg-gray-700 text-white border-none focus:ring-emerald-500 focus:border-emerald-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block mb-2 text-gray-300">Días para Recordar:</label>
+                        <div class="grid grid-cols-7 gap-2 text-center">
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="L" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Lun
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="M" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Mar
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="X" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Mié
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="J" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Jue
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="V" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Vie
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="S" class="rounded text-emerald-500 focus:ring-emerald-500"> Sáb
+                            </label>
+                            <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
+                                <input type="checkbox" name="plan-day" value="D" class="rounded text-emerald-500 focus:ring-emerald-500"> Dom
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 jade-accent text-gray-900 font-bold rounded-lg jade-glow-hover">Guardar Plan</button>
+                    <p id="plan-status" class="mt-3 text-sm text-emerald-400 text-center"></p>
+                </form>
+            </div>
+        </section>
+
+
+        <!-- Iconos de Redes Sociales (Fijos en la esquina inferior izquierda) -->
+        <div class="fixed bottom-4 left-4 flex flex-col space-y-3 z-40">
+            <a href="https://www.facebook.com/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Facebook">
+                <i data-lucide="facebook" class="w-6 h-6 text-emerald-500"></i>
+            </a>
+            <a href="https://www.instagram.com/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Instagram">
+                <i data-lucide="instagram" class="w-6 h-6 text-emerald-500"></i>
+            </a>
+            <a href="https://www.twitch.tv/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Twitch">
+                <i data-lucide="twitch" class="w-6 h-6 text-emerald-500"></i>
+            </a>
+        </div>
+
+        <!-- Menú Principal Flotante (FAB expandible, inferior derecha) -->
+        <div id="floating-menu" class="fixed bottom-4 right-4 flex flex-col items-end z-50">
+            <!-- Botones del Menú -->
+            <div id="nav-buttons" class="flex flex-col items-end menu-closed">
+                <button onclick="showSection('churchModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Iglesia">
+                    <i data-lucide="church" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="toggleModal('ministriesModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Ministerios">
+                    <i data-lucide="users-2" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('planModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Plan de Lectura">
+                    <i data-lucide="book-open-text" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('newsModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Noticias">
+                    <i data-lucide="newspaper" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('messagesModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Mensajes">
+                    <i data-lucide="messages-square" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showTwitchStream()" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Video en Vivo">
+                    <i data-lucide="monitor-dot" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="toggleModal('eventsModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Eventos">
+                    <i data-lucide="calendar-check" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('prayer-wall')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Plan de Oración">
+                    <i data-lucide="hand-heart" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('bibleStudyModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Estudio Bíblico">
+                    <i data-lucide="library" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('worshipModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Adoración/Predicaciones">
+                    <i data-lucide="music-4" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+                <button onclick="showSection('devotional-plan')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Configurar Plan Personal">
+                    <i data-lucide="list-checks" class="w-6 h-6 text-emerald-500"></i>
+                </button>
+            </div>
+
+            <!-- Botón FAB Principal -->
+            <button id="fab-toggle" onclick="toggleMenu()" class="p-4 mt-4 jade-accent rounded-full jade-glow jade-glow-hover transition duration-300 transform hover:rotate-90">
+                <i data-lucide="menu" class="w-8 h-8 text-gray-900"></i>
+            </button>
+        </div>
+
+    </div>
+    
+    <!-- MODALES: AJUSTES -->
+    <div id="settingsModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center">
+        <div class="bg-gray-900 p-8 rounded-xl w-11/12 md:w-1/3 border-4 border-emerald-500 jade-glow">
+            <h3 class="text-2xl font-bold mb-6 text-emerald-300">Ajustes y Notificaciones</h3>
+
+            <div class="space-y-4">
+                <!-- Notificaciones de Transmisión -->
+                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                    <span>Notificaciones de Transmisión en Directo</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" id="liveStreamToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+                <!-- Notificaciones de Eventos -->
+                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                    <span>Notificaciones de Eventos</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" id="eventToggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+                <!-- Notificaciones de Noticias -->
+                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                    <span>Notificaciones de Noticias</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" id="newsToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-gray-700">
+                <p class="text-sm font-bold text-emerald-400 mb-2">Acerca de (v1.0)</p>
+                <ul class="text-sm space-y-1 text-gray-400">
+                    <li><a href="#" class="hover:text-emerald-300">Acerca del Desarrollador</a></li>
+                    <li><a href="#" class="hover:text-emerald-300">Política de Privacidad</a></li>
+                    <li><a href="#" class="hover:text-emerald-300">Términos y Condiciones</a></li>
+                </ul>
+            </div>
+
+            <button onclick="toggleModal('settingsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODALES: MINISTERIOS (Contenedor principal) -->
+    <div id="ministriesModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-4xl border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
+            <h3 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Nuestros Ministerios</h3>
+            <div id="ministries-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Se poblará con JS -->
+            </div>
+            <button onclick="toggleModal('ministriesModal')" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODALES: DETALLE DE MINISTERIO (Reusable) -->
+    <div id="ministryDetailModal" class="fixed inset-0 modal-backdrop z-[110] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
+            <h3 id="detail-title" class="text-2xl font-bold mb-4 text-emerald-300"></h3>
+            <div class="space-y-4">
+                <div class="text-center">
+                    <img id="detail-photo" src="" alt="Foto del Líder" class="w-32 h-32 object-cover rounded-full mx-auto border-4 border-emerald-500 mb-4">
+                </div>
+                <p><strong>Líder:</strong> <span id="detail-leader"></span></p>
+                <p><strong>Dirección:</strong> <span id="detail-address"></span></p>
+                <p><strong>Teléfono:</strong> <span id="detail-phone"></span></p>
+                <p class="pt-2 border-t border-gray-700"><strong>Célula (Día/Hora):</strong> <span id="detail-cell-info"></span></p>
+                <p><strong>Dirección de la Célula:</strong> <span id="detail-cell-address"></span></p>
+            </div>
+            <button onclick="toggleModal('ministryDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODALES: TWITCH EMBED -->
+    <div id="twitchStreamModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-5xl border-4 border-emerald-500 jade-glow">
+            <h3 class="text-2xl font-bold mb-4 text-emerald-300">Transmisión en Vivo (Twitch)</h3>
+            <div class="aspect-video bg-black rounded-lg">
+                <!-- Reemplazar 'TU_CANAL_DE_TWITCH' con el nombre de tu canal -->
+                <iframe
+                    src="https://player.twitch.tv/?channel=TU_CANAL_DE_TWITCH&parent=localhost&muted=false&autoplay=true"
+                    height="100%"
+                    width="100%"
+                    frameborder="0"
+                    scrolling="no"
+                    allowfullscreen="true"
+                    class="rounded-lg">
+                </iframe>
+            </div>
+            <button onclick="hideTwitchStream()" class="mt-4 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+        </div>
+    </div>
+    
+    <!-- MODALES: EVENTOS (Calendario) -->
+    <div id="eventsModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-2xl border-4 border-emerald-500 jade-glow">
+            <h3 class="text-2xl font-bold mb-4 text-emerald-300 text-center">Calendario de Eventos</h3>
+            <div id="calendar-container">
+                <!-- El calendario se generará aquí -->
+            </div>
+            <button onclick="toggleModal('eventsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODALES: DETALLE DE EVENTO (Reusable) -->
+    <div id="eventDetailModal" class="fixed inset-0 modal-backdrop z-[110] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
+            <img id="event-image" src="" alt="Imagen del Evento" class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-emerald-500">
+            <h3 id="event-title" class="text-2xl font-bold mb-2 text-emerald-300"></h3>
+            <p id="event-date" class="text-sm text-gray-400 mb-4"></p>
+            <p id="event-description" class="text-gray-300"></p>
+            <button onclick="toggleModal('eventDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODALES: SECCIÓN GENÉRICA (Para Iglesia, Noticias, Mensajes, Estudio, Adoración) -->
+    <div id="genericModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-8 rounded-xl w-11/12 max-w-4xl border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
+            <h3 id="generic-title" class="text-3xl font-bold mb-6 text-emerald-300 text-center"></h3>
+            <div id="generic-content">
+                <!-- Contenido dinámico para cada sección -->
+            </div>
+            <button onclick="hideGenericModal()" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold">Cerrar</button>
+        </div>
+    </div>
+
+
+    <!-- FIREBASE AND JAVASCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'radio-iglesia-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Inicialización y autenticación de Firebase
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+        
+        if (firebaseConfig) {
+            try {
+                // Configura el nivel de logs para depuración
+                setLogLevel('Debug');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Listener de estado de autenticación
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        // Si no hay usuario (lo que no debería pasar con el token), intenta anónimo
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        userId = auth.currentUser?.uid || crypto.randomUUID();
+                    }
+                    isAuthReady = true;
+                    console.log("Firebase Auth Ready. User ID:", userId);
+                    // Una vez listo, cargar las peticiones de oración
+                    loadPrayerRequests();
+                });
+            } catch (error) {
+                console.error("Error al inicializar Firebase:", error);
+            }
         } else {
-          setUserId(null);
-          document.body.setAttribute('data-screen', 'login');
-          if (!initialAuthToken) {
-            await signInAnonymously(authInstance);
-          }
+            console.warn("La configuración de Firebase no está disponible. Las funciones de Guardar/Cargar no funcionarán.");
+            isAuthReady = true;
+            userId = crypto.randomUUID(); // ID temporal para simulación
         }
-      });
 
-      const trySignIn = async () => {
-        try {
-          if (initialAuthToken) {
-            await signInWithCustomToken(authInstance, initialAuthToken);
-          } else {
-            await signInAnonymously(authInstance);
-          }
-        } catch (error) {
-          console.error("Error al iniciar sesión con token/anónimamente:", error);
+        // --- FUNCIONES GLOBALES DE UI ---
+
+        window.toggleModal = function(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
         }
-        document.body.setAttribute('data-screen', 'main');
-      };
 
-      trySignIn();
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error al inicializar Firebase:", error);
-    }
-  }, []);
+        window.toggleMenu = function() {
+            const fab = document.getElementById('fab-toggle');
+            const navButtons = document.getElementById('nav-buttons');
+            navButtons.classList.toggle('menu-open');
+            navButtons.classList.toggle('menu-closed');
+            
+            const icon = fab.querySelector('i');
+            if (navButtons.classList.contains('menu-open')) {
+                icon.setAttribute('data-lucide', 'x');
+                lucide.createIcons();
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+                lucide.createIcons();
+            }
+        }
 
-  // 2. Definición de la ruta de datos
-  const getCollectionPath = (collectionName, isPublic = false) => {
-    if (!db || !userId) return '';
-    if (isPublic) {
-      return `artifacts/${appId}/public/data/${collectionName}`;
-    }
-    return `artifacts/${appId}/users/${userId}/${collectionName}`;
-  };
+        window.showTwitchStream = function() {
+            toggleModal('twitchStreamModal');
+        }
 
-  const isAuthReady = db && auth && userId;
+        window.hideTwitchStream = function() {
+            toggleModal('twitchStreamModal');
+        }
 
-  return (
-    <AppContext.Provider value={{ db, auth, userId, isAuthReady, t, language, setLanguage, theme, setTheme, getCollectionPath }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-// Hook personalizado para usar el contexto
-const useAppContext = () => useContext(AppContext);
-
-// --- COMPONENTES DE LA INTERFAZ (Ajustados a color ESMERALDA) ---
-
-// Componente para el fondo dinámico (simula video)
-const BackgroundVideo = ({ theme }) => (
-  <div className={`fixed inset-0 z-0 transition-all duration-500 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
-    {/* Simulando un video en loop con un gradiente animado */}
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 via-gray-800/50 to-teal-900/50 opacity-70 animate-pulse-slow"></div>
-    {/* Placeholder para la imagen o video */}
-    <div className="absolute inset-0 flex items-center justify-center text-white/50 text-xl font-bold">
-      <span className="text-sm">Fondo Dinámico de Radio Resucitada</span>
-    </div>
-  </div>
-);
-
-// Botón de Estilo Centralizado
-const PrimaryButton = ({ onClick, children, disabled = false, icon: Icon, className = "", type = "button" }) => (
-  <button
-    onClick={onClick}
-    type={type}
-    disabled={disabled}
-    className={`w-full flex items-center justify-center space-x-2 px-4 py-3 text-lg font-semibold rounded-xl transition-all duration-300 transform shadow-lg
-      ${disabled ? 'bg-gray-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]'}
-      text-white focus:outline-none focus:ring-4 focus:ring-emerald-500/50 ${className}`}
-  >
-    {Icon && <Icon className={`w-5 h-5 ${disabled && 'animate-spin'}`} />}
-    <span>{children}</span>
-  </button>
-);
-
-// Componente de Campo de Formulario
-const InputField = ({ label, type = 'text', value, onChange, placeholder, required = false, icon: Icon, name }) => {
-  const { theme } = useAppContext();
-  return (
-    <div className="relative mb-4">
-      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{label}{required && <span className="text-red-500">*</span>}</label>
-      <div className="flex items-center">
-        {Icon && <Icon className={`absolute left-3 w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
-        <input
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          name={name}
-          className={`w-full p-3 pl-10 border rounded-xl focus:ring-emerald-500 focus:border-emerald-500 transition-colors
-            ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Componente Modal Reutilizable
-const Modal = ({ isOpen, onClose, title, children }) => {
-  const { theme } = useAppContext();
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 backdrop-blur-sm transition-opacity duration-300">
-      <div className={`relative w-full max-w-lg p-6 rounded-2xl shadow-2xl transition-all transform duration-300
-        ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
-      >
-        <button
-          onClick={onClose}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <h3 className="text-3xl font-bold text-emerald-400 mb-4 border-b pb-2">{title}</h3>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// Componente de Toggle
-const Toggle = ({ label, checked, onChange }) => {
-  const { t, theme } = useAppContext();
-  return (
-    <div className="flex justify-between items-center py-3 border-b border-gray-700/50">
-      <span className={`text-lg font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{label}</span>
-      <div
-        className={`relative inline-flex items-center h-8 w-16 rounded-full cursor-pointer transition-colors ${checked ? 'bg-emerald-500' : 'bg-gray-500'}`}
-        onClick={() => onChange(!checked)}
-      >
-        <span
-          className={`inline-block w-7 h-7 transform bg-white rounded-full transition-transform duration-300 shadow-md ${checked ? 'translate-x-8' : 'translate-x-0.5'}`}
-        />
-        <span className={`absolute right-1 text-xs font-bold transition-opacity duration-300 ${checked ? 'opacity-0' : 'opacity-100 text-white'}`}>{t.TOGGLE_OFF}</span>
-        <span className={`absolute left-1 text-xs font-bold transition-opacity duration-300 ${checked ? 'opacity-100 text-white' : 'opacity-0'}`}>{t.TOGGLE_ON}</span>
-      </div>
-    </div>
-  );
-};
+        window.showSection = function(sectionId) {
+            // Ocultar todas las secciones flotantes
+            document.getElementById('prayer-wall').classList.add('hidden');
+            document.getElementById('devotional-plan').classList.add('hidden');
+            
+            // Ocultar el modal genérico por si está abierto
+            document.getElementById('genericModal').classList.add('hidden');
 
 
-// --- PANTALLAS DE AUTENTICACIÓN (Login, Registro) ---
+            if (sectionId === 'prayer-wall' || sectionId === 'devotional-plan') {
+                // Mostrar secciones que tienen contenido en el DOM principal
+                document.getElementById(sectionId).classList.remove('hidden');
+                // Ocultar el menú FAB después de seleccionar
+                document.getElementById('fab-toggle').click(); 
+                // Hacer scroll a la sección
+                document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Mostrar secciones que usan el modal genérico
+                populateGenericModal(sectionId);
+                toggleModal('genericModal');
+                // Ocultar el menú FAB después de seleccionar
+                document.getElementById('fab-toggle').click(); 
+            }
+        }
 
-const AuthScreen = ({ setCurrentScreen }) => {
-  const { auth, db, t, theme, getCollectionPath } = useAppContext();
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [emailStep, setEmailStep] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    isMember: 'visitor',
-  });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+        window.hideGenericModal = function() {
+            document.getElementById('genericModal').classList.add('hidden');
+        }
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(null);
-  };
+        // --- DATOS Y LÓGICA DE MINISTERIOS ---
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
-    } catch (err) {
-      console.error("Login Error:", err);
-      setError(t.LOGIN_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const MINISTRIES_DATA = {
+            ninos: {
+                title: 'Ministerio de Niños', leader: 'Hermana Ana', address: 'Calle 123, Ciudad', phone: '555-0101', 
+                cellInfo: 'Jueves 5:00 PM', cellAddress: 'Casa de Ana, Sector A', photo: 'https://placehold.co/128x128/10B981/000?text=Niños',
+                icon: 'baby'
+            },
+            alabanza: {
+                title: 'Ministerio de Alabanza', leader: 'Hermano David', address: 'Auditorio Principal', phone: '555-0102', 
+                cellInfo: 'Viernes 8:00 PM', cellAddress: 'Salón de Ensayos', photo: 'https://placehold.co/128x128/10B981/000?text=Alabanza',
+                icon: 'mic-2'
+            },
+            jovenes: {
+                title: 'Ministerio de Jóvenes', leader: 'Pastor Carlos', address: 'Centro Juvenil', phone: '555-0103', 
+                cellInfo: 'Sábados 6:00 PM', cellAddress: 'Parque Central', photo: 'https://placehold.co/128x128/10B981/000?text=Jóvenes',
+                icon: 'users'
+            },
+            prejovenes: {
+                title: 'Ministerio de Prejóvenes', leader: 'Líder Sofía', address: 'Salón B', phone: '555-0104', 
+                cellInfo: 'Sábados 3:00 PM', cellAddress: 'Casa de Sofía, Sector C', photo: 'https://placehold.co/128x128/10B981/000?text=Prejóvenes',
+                icon: 'user-cog'
+            },
+            caballeros: {
+                title: 'Ministerio de Caballeros', leader: 'Diácono Juan', address: 'Oficina 1', phone: '555-0105', 
+                cellInfo: 'Miércoles 7:00 AM', cellAddress: 'Cafetería del Sur', photo: 'https://placehold.co/128x128/10B981/000?text=Caballeros',
+                icon: 'briefcase'
+            },
+            damas: {
+                title: 'Ministerio de Damas', leader: 'Líder María', address: 'Salón C', phone: '555-0106', 
+                cellInfo: 'Martes 10:00 AM', cellAddress: 'Salón de Manualidades', photo: 'https://placehold.co/128x128/10B981/000?text=Damas',
+                icon: 'flower'
+            },
+            mujeres: {
+                title: 'Ministerio de Mujeres', leader: 'Pastora Elena', address: 'Salón Principal', phone: '555-0107', 
+                cellInfo: 'Jueves 9:00 AM', cellAddress: 'Casa de Elena, Zona VIP', photo: 'https://placehold.co/128x128/10B981/000?text=Mujeres',
+                icon: 'woman'
+            },
+            evangelismo: {
+                title: 'Ministerio de Evangelismo', leader: 'Evangelista Pedro', address: 'Punto de Encuentro', phone: '555-0108', 
+                cellInfo: 'Sábados 9:00 AM', cellAddress: 'El Mercado', photo: 'https://placehold.co/128x128/10B981/000?text=Evangelismo',
+                icon: 'megaphone'
+            }
+        };
 
-  const handleRegisterStepOne = (e) => {
-    e.preventDefault();
-    if (!formData.email) {
-      setError(t.REQUIRED_FIELD);
-      return;
-    }
-    setEmailStep(false);
-  };
+        function renderMinistries() {
+            const grid = document.getElementById('ministries-grid');
+            grid.innerHTML = Object.keys(MINISTRIES_DATA).map(key => {
+                const ministry = MINISTRIES_DATA[key];
+                return `
+                    <button onclick="showMinistryDetail('${key}')" 
+                        class="p-4 bg-gray-800 rounded-xl flex flex-col items-center justify-center space-y-2 text-center hover:bg-gray-700 transition jade-glow-hover border border-transparent hover:border-emerald-500">
+                        <i data-lucide="${ministry.icon}" class="w-8 h-8 text-emerald-500"></i>
+                        <span class="font-semibold text-sm">${ministry.title}</span>
+                    </button>
+                `;
+            }).join('');
+            lucide.createIcons(); // Vuelve a crear los iconos después de inyectar HTML
+        }
 
-  const handleRegisterStepTwo = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+        window.showMinistryDetail = function(key) {
+            const detail = MINISTRIES_DATA[key];
+            document.getElementById('detail-title').textContent = detail.title;
+            document.getElementById('detail-leader').textContent = detail.leader;
+            document.getElementById('detail-address').textContent = detail.address;
+            document.getElementById('detail-phone').textContent = detail.phone;
+            document.getElementById('detail-cell-info').textContent = detail.cellInfo;
+            document.getElementById('detail-cell-address').textContent = detail.cellAddress;
+            document.getElementById('detail-photo').src = detail.photo;
+            
+            // Abrir modal de detalle y cerrar el modal principal de ministerios
+            toggleModal('ministriesModal');
+            toggleModal('ministryDetailModal');
+        }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError(t.PASSWORDS_MISMATCH);
-      setLoading(false);
-      return;
-    }
+        // --- LÓGICA DEL CALENDARIO DE EVENTOS ---
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
+        const EVENTS = [
+            { date: '2025-10-15', title: 'Conferencia de Jóvenes', description: 'Un tiempo especial de adoración y palabra con invitados.', image: 'https://placehold.co/300x200/10B981/000?text=Conferencia+Jóvenes' },
+            { date: '2025-10-28', title: 'Estudio Bíblico Especial', description: 'Profundizando en el libro de Romanos.', image: 'https://placehold.co/300x200/10B981/000?text=Estudio+Rom' },
+            { date: '2025-11-05', title: 'Vigilia de Oración', description: 'Toda la noche orando por la ciudad.', image: 'https://placehold.co/300x200/10B981/000?text=Vigilia+Oración' }
+        ];
 
-      const userDocRef = doc(db, getCollectionPath('user_profile'), user.uid);
-      await setDoc(userDocRef, {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        isMember: formData.isMember === 'member',
-        createdAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("Registration Error:", err);
-      setError(t.REGISTER_ERROR + ": " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        function renderCalendar() {
+            const container = document.getElementById('calendar-container');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            // Crear una fecha para el primer día del mes
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDayOfWeek = firstDay.getDay(); // 0 = Domingo, 6 = Sábado
+            
+            const eventDates = EVENTS.map(e => new Date(e.date).toDateString());
 
-  const commonCardStyle = `w-full max-w-sm p-8 mx-auto rounded-3xl shadow-2xl transition-all duration-500
-    ${theme === 'dark' ? 'bg-gray-800/90 text-white' : 'bg-white/95 text-gray-900'} backdrop-blur-md`;
+            let html = `
+                <div class="text-center mb-4">
+                    <h4 class="text-xl font-semibold">${firstDay.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</h4>
+                </div>
+                <div class="grid grid-cols-7 text-center font-bold text-emerald-400 border-b border-gray-700 pb-2">
+                    <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center mt-2">
+            `;
+            
+            // Espacios en blanco al inicio (días del mes anterior)
+            for (let i = 0; i < startDayOfWeek; i++) {
+                html += '<div></div>';
+            }
 
-  const renderLoginForm = () => (
-    <div className={commonCardStyle}>
-      {/* Nuevo Logo Placeholder (Ajustado al color esmeralda) */}
-      <img src="https://placehold.co/100x100/10b981/ffffff?text=R" alt="App Logo" className="mx-auto mb-6 rounded-lg"/>
-      <h2 className="text-3xl font-extrabold text-center mb-6">{t.LOGIN_TITLE}</h2>
+            // Días del mes
+            for (let day = 1; day <= daysInMonth; day++) {
+                const currentDate = new Date(year, month, day);
+                const isToday = currentDate.toDateString() === now.toDateString();
+                const hasEvent = eventDates.includes(currentDate.toDateString());
+                
+                const classes = [
+                    'p-2 rounded-lg transition text-sm',
+                    isToday ? 'bg-emerald-600 font-bold' : 'bg-gray-800',
+                    hasEvent ? 'has-event event-day' : ''
+                ].join(' ');
 
-      <form onSubmit={handleLogin}>
-        <InputField
-          label={t.EMAIL}
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          placeholder="email@ejemplo.com"
-          required
-          icon={Mail}
-        />
-        <InputField
-          label={t.PASSWORD}
-          type="password"
-          name="password"
-          value={formData.password}
-          onChange={handleInputChange}
-          placeholder="********"
-          required
-          icon={Lock}
-        />
+                if (hasEvent) {
+                    html += `<div class="${classes}" onclick="showEventDetail('${currentDate.toISOString().split('T')[0]}')">${day}</div>`;
+                } else {
+                    html += `<div class="${classes}">${day}</div>`;
+                }
+            }
 
-        {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
+            html += `</div>`;
+            container.innerHTML = html;
+        }
 
-        <PrimaryButton type="submit" disabled={loading} icon={loading ? Loader2 : LogIn}>
-          {loading ? 'Cargando...' : t.LOGIN_BUTTON}
-        </PrimaryButton>
-      </form>
+        window.showEventDetail = function(dateString) {
+            const event = EVENTS.find(e => e.date === dateString);
+            if (event) {
+                document.getElementById('event-title').textContent = event.title;
+                document.getElementById('event-date').textContent = new Date(event.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                document.getElementById('event-description').textContent = event.description;
+                document.getElementById('event-image').src = event.image;
 
-      <div className={`mt-6 text-center text-sm space-y-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-        <a href="#" className="hover:text-emerald-400 transition-colors block">{t.FORGOT_PASSWORD}</a>
-        <button onClick={() => setIsRegistering(true)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors block w-full">
-          {t.REGISTER_TITLE}
-        </button>
-      </div>
-    </div>
-  );
+                // Abrir modal de detalle de evento
+                toggleModal('eventDetailModal');
+            }
+        }
 
-  const renderRegisterEmailStep = () => (
-    <div className={commonCardStyle}>
-      <h2 className="text-3xl font-extrabold text-center mb-6">{t.REGISTER_TITLE}</h2>
-      <p className={`mb-6 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-        {t.ENTER_EMAIL_CONTINUE}
-      </p>
+        // --- LÓGICA DE SECCIONES GENÉRICAS (Iglesia, Noticias, etc.) ---
 
-      <form onSubmit={handleRegisterStepOne}>
-        <InputField
-          label={t.EMAIL}
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          placeholder="email@ejemplo.com"
-          required
-          icon={Mail}
-        />
-
-        {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
-
-        <PrimaryButton type="submit" icon={CornerDownRight}>
-          Continuar
-        </PrimaryButton>
-      </form>
-
-      <div className="mt-6 text-center">
-        <button onClick={() => setIsRegistering(false)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors text-sm">
-          {t.BACK_TO_LOGIN}
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderFullRegistrationForm = () => (
-    <div className={`${commonCardStyle} max-w-md`}>
-      <h2 className="text-3xl font-extrabold text-center mb-6">{t.REGISTER_TITLE}</h2>
-      <p className={`mb-4 text-center font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.EMAIL}: {formData.email}</p>
-
-      <form onSubmit={handleRegisterStepTwo} className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <InputField
-            label={t.FIRST_NAME}
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleInputChange}
-            placeholder="Juan"
-            required
-            icon={User}
-          />
-          <InputField
-            label={t.LAST_NAME}
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            placeholder="Pérez"
-            required
-            icon={User}
-          />
-        </div>
-        <InputField
-          label={t.PHONE_NUMBER}
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={handleInputChange}
-          placeholder="(555) 123-4567"
-          required
-          icon={Phone}
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <InputField
-            label={t.PASSWORD}
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            placeholder="********"
-            required
-            icon={Lock}
-          />
-          <InputField
-            label={t.CONFIRM_PASSWORD}
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            placeholder="********"
-            required
-            icon={Lock}
-          />
-        </div>
-
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.MEMBER_STATUS}</label>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="isMember"
-                value="member"
-                checked={formData.isMember === 'member'}
-                onChange={handleInputChange}
-                className="form-radio text-emerald-600 focus:ring-emerald-500 h-5 w-5"
-              />
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{t.MEMBER}</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="isMember"
-                value="visitor"
-                checked={formData.isMember === 'visitor'}
-                onChange={handleInputChange}
-                className="form-radio text-emerald-600 focus:ring-emerald-500 h-5 w-5"
-              />
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{t.VISITOR}</span>
-            </label>
-          </div>
-        </div>
-
-        {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
-
-        <PrimaryButton type="submit" disabled={loading} icon={loading ? Loader2 : UserPlus}>
-          {loading ? 'Enviando...' : t.REGISTER_BUTTON}
-        </PrimaryButton>
-      </form>
-      <div className="mt-6 text-center">
-        <button onClick={() => setIsRegistering(false)} className="text-emerald-500 font-semibold hover:text-emerald-400 transition-colors text-sm">
-          {t.BACK_TO_LOGIN}
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex items-center justify-center min-h-screen p-4 z-10 relative">
-      <BackgroundVideo theme={theme} />
-      {isRegistering
-        ? (emailStep ? renderRegisterEmailStep() : renderFullRegistrationForm())
-        : renderLoginForm()}
-    </div>
-  );
-};
-
-// --- COMPONENTES DE MENÚ Y SECCIONES ---
-
-// Icono del Menú Principal
-const MainMenuItem = ({ title, icon: Icon, onClick }) => {
-  const { theme } = useAppContext();
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/50
-        ${theme === 'dark' ? 'bg-gray-700/80 text-white shadow-lg' : 'bg-white/90 text-gray-800 shadow-xl'} backdrop-blur-sm`}
-    >
-      <Icon className="w-8 h-8 md:w-10 md:h-10 text-emerald-400 mb-2" />
-      <span className="text-xs font-semibold text-center mt-1">{title}</span>
-    </button>
-  );
-};
-
-// 3. Muro de Oración (Mejorado)
-const PrayerSection = ({ setCurrentScreen }) => {
-  const { db, userId, t, theme, getCollectionPath } = useAppContext();
-  const [prayerText, setPrayerText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [prayerCount, setPrayerCount] = useState(0);
-  const [prayerWall, setPrayerWall] = useState([]);
-
-  // Obtener el conteo y las peticiones en tiempo real
-  useEffect(() => {
-    if (!db) return;
-    const publicPrayerPath = getCollectionPath('prayer_requests', true);
-    const q = query(collection(db, publicPrayerPath), orderBy("timestamp", "desc"), limit(10));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPrayerCount(snapshot.size);
-      const wall = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        // Mock the user ID for simplicity as we don't fetch user profiles here
-        displayUserId: doc.data().userId.substring(0, 8) + '...',
-      }));
-      setPrayerWall(wall);
-    }, (error) => {
-      console.error("Error fetching prayer data:", error);
-    });
-
-    return () => unsubscribe();
-  }, [db, getCollectionPath]);
-
-  // Enviar nueva petición de oración
-  const handleSubmitPrayer = async () => {
-    if (prayerText.trim() === "") return;
-
-    setIsSubmitting(true);
-    setMessage(null);
-    try {
-      const publicPrayerPath = getCollectionPath('prayer_requests', true);
-      await addDoc(collection(db, publicPrayerPath), {
-        text: prayerText.trim(),
-        userId: userId,
-        timestamp: new Date().toISOString(),
-      });
-      setPrayerText('');
-      setMessage({ type: 'success', text: t.PRAYER_SUCCESS });
-    } catch (error) {
-      console.error("Error submitting prayer:", error);
-      setMessage({ type: 'error', text: t.REGISTER_ERROR });
-    } finally {
-      setIsSubmitting(false);
-      setTimeout(() => setMessage(null), 3000);
-    }
-  };
-
-  const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
-  const wallStyle = `p-4 rounded-lg border-l-4 border-emerald-500 mb-2 ${theme === 'dark' ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100 text-gray-700'}`;
-
-  return (
-    <div className="p-4 space-y-6 max-w-2xl mx-auto">
-      <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_PRAYER_WALL}</h3>
-
-      {/* Sección de Solicitud Personal */}
-      <div className={cardStyle}>
-        <h4 className={`text-xl font-semibold mb-3 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_REQUEST}</h4>
-        <textarea
-          value={prayerText}
-          onChange={(e) => setPrayerText(e.target.value)}
-          placeholder={t.ENTER_PRAYER_TEXT}
-          rows="4"
-          className={`w-full p-3 border rounded-xl focus:ring-emerald-500 focus:border-emerald-500 transition-colors
-            ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-        />
-        {message && (
-          <p className={`mt-2 text-center text-sm ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{message.text}</p>
-        )}
-        <PrimaryButton onClick={handleSubmitPrayer} disabled={isSubmitting || prayerText.trim() === ""} className="mt-4" icon={HeartHandshake}>
-          {isSubmitting ? 'Enviando...' : t.SUBMIT_PRAYER}
-        </PrimaryButton>
-      </div>
-
-      {/* Muro de Oración de la Comunidad */}
-      <div className={cardStyle}>
-        <h4 className={`text-xl font-semibold mb-4 text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_WALL_REQUESTS} ({t.PRAYER_COUNT}: {prayerCount})</h4>
-        {prayerWall.length === 0 ? (
-          <p className="text-center italic text-gray-500">No hay peticiones recientes.</p>
-        ) : (
-          <div className="space-y-3 max-h-60 overflow-y-auto">
-            {prayerWall.map((req) => (
-              <div key={req.id} className={wallStyle}>
-                <p className="font-medium">{req.text}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Usuario: {req.displayUserId} | {new Date(req.timestamp).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">
-        Volver
-      </PrimaryButton>
-    </div>
-  );
-};
-
-// 4. Secciones de Información Específica
-
-// 4.1. Iglesias Afiliadas (No Cambia)
-const ChurchScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const churches = [
-        { name: "Iglesia Central Resucitada", pastor: "Pst. Juan Pérez", photo: "https://placehold.co/100x100/10b981/ffffff?text=P1", address: "Calle Falsa 123, Ciudad", postal: "01001", email: "central@radio.org", phone: "+503 2222-1111", country: "El Salvador" },
-        { name: "Sede Oriental", pastor: "Pst. Ana Gómez", photo: "https://placehold.co/100x100/10b981/ffffff?text=P2", address: "Blvd. Oriente #45, Ciudad", postal: "02002", email: "oriente@radio.org", phone: "+504 3333-2222", country: "Honduras" },
-    ];
-    const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
-
-    return (
-        <div className="p-4 space-y-6 max-w-4xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.CHURCHES_TITLE}</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-                {churches.map((church, index) => (
-                    <div key={index} className={cardStyle}>
-                        <div className="flex space-x-4 mb-4 items-center border-b pb-4 border-gray-700">
-                            <img src={church.photo} alt={`Foto ${church.pastor}`} className="w-16 h-16 rounded-full object-cover"/>
-                            <div>
-                                <h4 className="font-bold text-xl text-emerald-400">{church.name}</h4>
-                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Pastor: {church.pastor}</p>
+        const SECTIONS_CONTENT = {
+            churchModal: {
+                title: "Nuestra Iglesia",
+                content: `
+                    <div class="space-y-6">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Información General</h4>
+                            <p class="text-gray-300">Dirección: Av. La Esperanza #456, Ciudad de Fe.</p>
+                            <p class="text-gray-300">Horarios de Servicio: Domingos 10:00 AM y 6:00 PM. Miércoles de Estudio Bíblico 7:00 PM.</p>
+                            <p class="text-gray-300">Teléfono: (555) 123-4567</p>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Nuestra Historia</h4>
+                            <p class="text-gray-300">Fundada en 1998 con la visión de alcanzar a la comunidad con el mensaje de esperanza. A lo largo de los años, hemos crecido y establecido diversos ministerios para servir a todas las edades.</p>
+                            <p class="text-gray-300">Nuestra misión es Glorificar a Dios haciendo discípulos.</p>
+                        </div>
+                    </div>
+                `
+            },
+            planModal: {
+                title: "Plan de Lectura",
+                content: `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Aquí encontrarás enlaces a nuestros planes de lectura bíblica y estudios temáticos.</p>
+                        <ul class="space-y-2">
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Plan de Lectura Anual (Misterios de la Biblia)</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Estudio sobre el Liderazgo de Jesús</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Link a un Libro de Devocional Recomendado</a></li>
+                        </ul>
+                    </div>
+                `
+            },
+            newsModal: {
+                title: "Noticias de la Radio e Iglesia",
+                content: `
+                    <p class="text-gray-300 mb-6">Mantente al día con lo último de nuestra comunidad.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Recuadro 1 -->
+                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia1', '_blank')">
+                            <img src="https://placehold.co/400x200/10B981/000?text=Nueva+Serie" alt="Noticia 1" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold text-emerald-300">Lanzamiento de Nueva Serie de Predicaciones</h5>
+                                <p class="text-sm text-gray-400 mt-1">Descubre 'Fe en la Adversidad'.</p>
+                                <!-- Esto sería el QR real -->
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
                             </div>
                         </div>
-                        <div className={`space-y-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                            <p className="flex items-center space-x-2"><MapPin className="w-4 h-4 text-emerald-500"/><span>{church.address}, {church.country} ({church.postal})</span></p>
-                            <p className="flex items-center space-x-2"><Mail className="w-4 h-4 text-emerald-500"/><span>{church.email}</span></p>
-                            <p className="flex items-center space-x-2"><Phone className="w-4 h-4 text-emerald-500"/><span>{church.phone}</span></p>
+                        <!-- Recuadro 2 -->
+                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia2', '_blank')">
+                            <img src="https://placehold.co/400x200/10B981/000?text=Retiro+2025" alt="Noticia 2" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold text-emerald-300">¡Inscripciones Abiertas para el Retiro 2025!</h5>
+                                <p class="text-sm text-gray-400 mt-1">Reserva tu lugar ahora.</p>
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
+                            </div>
+                        </div>
+                        <!-- Recuadro 3 -->
+                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia3', '_blank')">
+                            <img src="https://placehold.co/400x200/10B981/000?text=Voluntariado" alt="Noticia 3" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold text-emerald-300">Jornada de Voluntariado Comunitario</h5>
+                                <p class="text-sm text-gray-400 mt-1">Súmate a la labor de servicio.</p>
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
+                            </div>
+                        </div>
+                        <!-- Recuadro 4 -->
+                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia4', '_blank')">
+                            <img src="https://placehold.co/400x200/10B981/000?text=Testimonios" alt="Noticia 4" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold text-emerald-300">Nuevos Testimonios de la Semana</h5>
+                                <p class="text-sm text-gray-400 mt-1">Inspírate con lo que Dios está haciendo.</p>
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
+                            </div>
                         </div>
                     </div>
-                ))}
-            </div>
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-// 4.2. Ministerios (Actualizado con Modal)
-const MinistriesScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const [selectedMinistry, setSelectedMinistry] = useState(null);
-
-    // Mock de datos con la información adicional solicitada
-    const ministriesData = [
-        { title: t.MINISTRY_ALABANZA, icon: Zap, leader: "María Sol", phone: "+503 7777-1111", cellAddress: "Auditorio Principal, Lunes 7pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Alabanza" },
-        { title: t.MINISTRY_YOUTH, icon: Users, leader: "Carlos Reyes", phone: "+503 7777-1112", cellAddress: "Salón Joven, Sábado 4pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Jovenes" },
-        { title: t.MINISTRY_PREYOUTH, icon: UserPlus, leader: "Brenda Cruz", phone: "+503 7777-1113", cellAddress: "Aula 3, Domingo 10am", photo: "https://placehold.co/150x150/059669/ffffff?text=PreJovenes" },
-        { title: t.MINISTRY_MEN, icon: User, leader: "Roberto López", phone: "+503 7777-1114", cellAddress: "Comedor, Jueves 8pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Caballeros" },
-        { title: t.MINISTRY_WOMEN, icon: User, leader: "Elena Castro", phone: "+503 7777-1115", cellAddress: "Salón Rosa, Miércoles 6pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Damas" },
-        { title: t.MINISTRY_USHERS, icon: Home, leader: "David Martínez", phone: "+503 7777-1116", cellAddress: "Vestíbulo, Viernes 5pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Ujieres" },
-        { title: t.MINISTRY_CHILDREN, icon: HeartHandshake, leader: "Sofia Flores", phone: "+503 7777-1117", cellAddress: "Escuela Dominical, Domingo 9am", photo: "https://placehold.co/150x150/059669/ffffff?text=Ninios" },
-        { title: t.MINISTRY_EVANGELISM, icon: Globe, leader: "Andrés Vela", phone: "+503 7777-1118", cellAddress: "Punto de Misión, Sábado 2pm", photo: "https://placehold.co/150x150/059669/ffffff?text=Evangelismo" },
-    ];
-    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:bg-emerald-100/20 cursor-pointer`;
-
-    const DetailModal = () => (
-        <Modal
-            isOpen={!!selectedMinistry}
-            onClose={() => setSelectedMinistry(null)}
-            title={`${selectedMinistry?.title} - ${t.DETAIL}`}
-        >
-            <div className="flex flex-col items-center space-y-4 pt-4">
-                <img src={selectedMinistry?.photo} alt={selectedMinistry?.title} className="w-32 h-32 rounded-full object-cover border-4 border-emerald-500 shadow-lg"/>
-                <div className={`text-center space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                    <p className="text-xl font-bold text-emerald-400">{t.LEADER}: {selectedMinistry?.leader}</p>
-                    <p className="flex items-center space-x-2 justify-center"><Phone className="w-4 h-4 text-emerald-500"/><span>{selectedMinistry?.phone}</span></p>
-                    <p className="flex items-center space-x-2 justify-center"><Hash className="w-4 h-4 text-emerald-500"/><span>{t.CELL_ADDRESS}: {selectedMinistry?.cellAddress}</span></p>
-                </div>
-                <PrimaryButton onClick={() => setSelectedMinistry(null)} className="mt-4 bg-gray-600 hover:bg-gray-700 w-full max-w-xs">{t.CLOSE}</PrimaryButton>
-            </div>
-        </Modal>
-    );
-
-    return (
-        <div className="p-4 space-y-6 max-w-xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MINISTRIES_TITLE}</h3>
-            <div className="grid grid-cols-2 gap-4">
-                {ministriesData.map((min, index) => (
-                    <button key={index} onClick={() => setSelectedMinistry(min)} className={`${cardStyle} text-left`}>
-                        <min.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                        <span className="font-semibold text-sm">{min.title}</span>
-                    </button>
-                ))}
-            </div>
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-            {selectedMinistry && <DetailModal />}
-        </div>
-    );
-};
-
-
-// 4.3. Plan de Lectura (No Cambia)
-const ReadingPlanScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
-
-    return (
-        <div className="p-4 space-y-6 max-w-xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_READING_PLAN}</h3>
-
-            <div className={cardStyle}>
-                <h4 className="text-xl font-bold text-emerald-500 flex items-center space-x-2"><BookOpen className="w-5 h-5"/><span>{t.READING_PLAN_BIBLE}</span></h4>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Accede a planes de 90 días, un año o temáticos. (Simulación: Ir a PDF o link externo)</p>
-                <PrimaryButton className="!py-2 bg-emerald-700 hover:bg-emerald-800">Ver Planes</PrimaryButton>
-            </div>
-            <div className={cardStyle}>
-                <h4 className="text-xl font-bold text-emerald-500 flex items-center space-x-2"><AlignJustify className="w-5 h-5"/><span>{t.READING_PLAN_STUDY}</span></h4>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Material de estudio de libros o temas específicos. (Simulación: Descargar PDFs)</p>
-                <PrimaryButton className="!py-2 bg-emerald-700 hover:bg-emerald-800">Ver Estudios</PrimaryButton>
-            </div>
-
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-// 4.4. Noticias (No Cambia)
-const NewsScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const newsData = [
-        { title: t.NEWS_GATHERING, content: "Resumen de las últimas noticias y testimonios de la obra.", link: "#" },
-        { title: t.NEWS_EVENTS, content: "Información detallada sobre los eventos próximos y las fechas clave.", link: "#" },
-        { title: "Reporte Misionero", content: "Noticias del campo misionero internacional.", link: "#" },
-    ];
-    const cardStyle = `p-4 rounded-xl shadow-lg transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
-
-    return (
-        <div className="p-4 space-y-6 max-w-2xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_NEWS}</h3>
-
-            {newsData.map((item, index) => (
-                <a key={index} href={item.link} target="_blank" className={`${cardStyle} block hover:ring-2 ring-emerald-500`}>
-                    <h4 className="font-bold text-xl text-emerald-500 mb-1">{item.title}</h4>
-                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{item.content}</p>
-                    <span className="text-xs text-emerald-600 mt-2 block">Leer más...</span>
-                </a>
-            ))}
-
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-// 4.5. Mensajes (Links - No Cambia)
-const MessagesScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const messages = [
-        { title: "El Poder de la Fe (Youtube)", link: "https://youtube.com/user/radioresucitada", date: "2025-01-15", icon: Video },
-        { title: "Avivamiento en Casa (Facebook)", link: "https://facebook.com/radioresucitada", date: "2025-01-08", icon: Facebook },
-        { title: "Serie: Profecía (Twitch)", link: "https://twitch.tv/radioresucitada", date: "2024-12-29", icon: Video },
-    ];
-    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:ring-2 ring-emerald-500`;
-
-    return (
-        <div className="p-4 space-y-6 max-w-xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_MESSAGES}</h3>
-
-            {messages.map((msg, index) => (
-                <a key={index} href={msg.link} target="_blank" className={`${cardStyle} block`}>
-                    <msg.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                    <div className="flex-grow">
-                        <p className="font-semibold text-base text-emerald-400">{msg.title}</p>
-                        <p className="text-xs text-gray-500">{new Date(msg.date).toLocaleDateString()}</p>
+                `
+            },
+            messagesModal: {
+                title: "Mensajes y Sermones Archivados",
+                content: `
+                    <p class="text-gray-300 mb-4">Accede a todos los mensajes de nuestra página principal.</p>
+                    <ul class="space-y-3">
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Mensaje: La Parábola del Sembrador (Parte 3)</a></li>
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Serie: Fundamentos de la Fe (Completa)</a></li>
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Mensaje Especial: Navidad 2024</a></li>
+                    </ul>
+                `
+            },
+            bibleStudyModal: {
+                title: "Estudios Bíblicos y Libros",
+                content: `
+                    <div class="space-y-6">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Días y Temas de Estudio</h4>
+                            <p class="text-gray-300"><strong>Miércoles a las 7:00 PM:</strong> Estudio Profundo sobre los Profetas Menores.</p>
+                            <p class="text-gray-300"><strong>Sábados a las 10:00 AM:</strong> Taller de Apologética para Jóvenes.</p>
+                        </div>
+                        <h4 class="text-xl font-semibold text-emerald-400 mb-2">Libros Recomendados</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <!-- Libro 1 -->
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <img src="https://placehold.co/100x150/065f46/FFF?text=Libro+A" alt="Libro A" class="mx-auto mb-2">
+                                <p class="text-sm font-semibold">"El Camino del Discípulo"</p>
+                                <a href="#" class="text-xs text-emerald-400 hover:text-emerald-300">Ver Link</a>
+                            </div>
+                            <!-- Libro 2 -->
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <img src="https://placehold.co/100x150/065f46/FFF?text=Libro+B" alt="Libro B" class="mx-auto mb-2">
+                                <p class="text-sm font-semibold">"Principios de Adoración"</p>
+                                <a href="#" class="text-xs text-emerald-400 hover:text-emerald-300">Ver Link</a>
+                            </div>
+                        </div>
                     </div>
-                </a>
-            ))}
-
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-// 4.6. En Vivos / Estudio Bíblico (Twitch Player - No Cambia)
-const LiveAndBibleStudyScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const twitchChannel = "radioresucitada"; // Reemplazar con el canal real
-
-    return (
-        <div className="p-4 space-y-6 max-w-4xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_LIVE} & {t.MENU_BIBLE_STUDY}</h3>
-
-            <div className={`p-6 rounded-xl shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                <p className="text-xl font-semibold text-emerald-500 mb-4">{t.TWITCH_LIVE} {twitchChannel}</p>
-                <div className="aspect-video w-full">
-                    {/* Twitch Embed Player */}
-                    <iframe
-                        src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=localhost&muted=false&autoplay=true`}
-                        height="100%"
-                        width="100%"
-                        allowFullScreen
-                        title="Twitch Live Stream"
-                        className="rounded-lg border-2 border-emerald-500"
-                    ></iframe>
-                </div>
-                <p className={`mt-4 text-sm text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    El Estudio Bíblico se transmite aquí los miércoles.
-                </p>
-            </div>
-
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-// 4.7. Devocionales (No Cambia)
-const DevotionalScreen = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const devotionals = [
-        { title: "Devocional de Hoy: 'Paz que Sobrepasa'", type: "Texto", icon: Sun, link: "#" },
-        { title: "Lista de Alabanzas (Spotify Link)", type: t.DEVOTIONAL_MUSIC, icon: Zap, link: "#" },
-        { title: "Letra de Coros: 'Grande es Tu Amor'", type: "Letras", icon: AlignJustify, link: "#" },
-    ];
-    const cardStyle = `p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} hover:ring-2 ring-emerald-500`;
-
-    return (
-        <div className="p-4 space-y-6 max-w-xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_DEVOCIONAL}</h3>
-
-            {devotionals.map((dev, index) => (
-                <a key={index} href={dev.link} target="_blank" className={`${cardStyle} block`}>
-                    <dev.icon className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                    <div className="flex-grow">
-                        <p className="font-semibold text-base text-emerald-400">{dev.title}</p>
-                        <p className="text-xs text-gray-500">{dev.type}</p>
+                `
+            },
+            worshipModal: {
+                title: "Adoración y Predicaciones",
+                content: `
+                    <p class="text-gray-300 mb-4">Accede a las listas de reproducción de adoración y predicaciones pasadas.</p>
+                    <div class="space-y-4">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold text-emerald-400 mb-2 flex items-center"><i data-lucide="youtube" class="w-5 h-5 mr-2"></i> Música de Adoración</h4>
+                            <p class="text-gray-400">Lista de las alabanzas cantadas en los servicios.</p>
+                            <a href="#" class="mt-2 inline-block text-emerald-400 hover:text-emerald-300 font-medium">Link a Playlist de Alabanza</a>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold text-emerald-400 mb-2 flex items-center"><i data-lucide="message-square" class="w-5 h-5 mr-2"></i> Predicaciones Grabadas</h4>
+                            <p class="text-gray-400">Archivo completo de todos los mensajes dominicales.</p>
+                            <a href="#" class="mt-2 inline-block text-emerald-400 hover:text-emerald-300 font-medium">Link a Playlist de Predicaciones</a>
+                        </div>
                     </div>
-                </a>
-            ))}
+                `
+            }
+        };
 
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-
-// 4.8. Plan de Oración (Configuración de Recordatorios - No Cambia)
-const PrayerPlanConfig = ({ setCurrentScreen }) => {
-    const { t, theme } = useAppContext();
-    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const [selectedDays, setSelectedDays] = useState([]);
-    const [selectedHour, setSelectedHour] = useState('08:00');
-    const [message, setMessage] = useState(null);
-
-    const handleDayToggle = (day) => {
-        setSelectedDays(prev =>
-            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-        );
-    };
-
-    const handleConfirmPlan = () => {
-        // En una app real, esto guardaría la configuración en Firestore
-        // y configuraría las notificaciones push en el dispositivo.
-        console.log("Plan Confirmado:", { days: selectedDays, time: selectedHour });
-
-        if (selectedDays.length === 0) {
-            setMessage({ type: 'error', text: "Debe seleccionar al menos un día." });
-            return;
+        function populateGenericModal(sectionId) {
+            const section = SECTIONS_CONTENT[sectionId];
+            if (section) {
+                document.getElementById('generic-title').textContent = section.title;
+                document.getElementById('generic-content').innerHTML = section.content;
+                lucide.createIcons(); // Recarga iconos
+            }
         }
 
-        setMessage({
-            type: 'success',
-            text: `Plan de oración configurado para las ${selectedHour} los días: ${selectedDays.join(', ')}.`,
-        });
-        setTimeout(() => setMessage(null), 5000);
-    };
 
-    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
+        // --- LÓGICA DEL MURO DE ORACIÓN (FIREBASE) ---
 
-    return (
-        <div className="p-4 space-y-6 max-w-xl mx-auto">
-            <h3 className="text-3xl font-bold text-center text-emerald-400">{t.MENU_PRAYER_PLAN}</h3>
+        function loadPrayerRequests() {
+            if (!isAuthReady || !db) return;
 
-            <div className={cardStyle}>
-                <div className="text-center">
-                    <img src="https://placehold.co/100x100/10b981/ffffff?text=Oración" alt="Logo Oración" className="mx-auto mb-4 rounded-lg"/>
-                    <h4 className="text-2xl font-bold text-emerald-500">{t.PRAYER_PLAN_CONFIG}</h4>
-                </div>
+            const prayerCollectionRef = collection(db, `artifacts/${appId}/public/data/prayerRequests`);
+            const q = query(prayerCollectionRef);
+            const prayerList = document.getElementById('prayer-list');
 
-                <div className="space-y-4">
-                    {/* Selección de Días */}
-                    <div>
-                        <label className={`block text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_PLAN_DAY}</label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {days.map(day => (
-                                <button
-                                    key={day}
-                                    onClick={() => handleDayToggle(day)}
-                                    className={`p-2 rounded-lg text-sm font-semibold transition-colors
-                                        ${selectedDays.includes(day)
-                                            ? 'bg-emerald-500 text-white shadow-md'
-                                            : 'bg-gray-600/50 text-gray-300 hover:bg-gray-700'}`
-                                    }
-                                >
-                                    {day.substring(0, 3)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Selección de Hora */}
-                    <div>
-                        <label className={`block text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.PRAYER_PLAN_HOUR}</label>
-                        <InputField
-                            type="time"
-                            value={selectedHour}
-                            onChange={(e) => setSelectedHour(e.target.value)}
-                            icon={Clock}
-                            name="time"
-                        />
-                    </div>
-                </div>
-
-                {message && (
-                    <p className={`mt-4 text-center font-medium ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{message.text}</p>
-                )}
-
-                <PrimaryButton onClick={handleConfirmPlan} icon={Send}>
-                    {t.CONFIRM_PLAN}
-                </PrimaryButton>
-                <PrimaryButton className="bg-emerald-700 hover:bg-emerald-800 !py-2 !text-base" icon={Calendar}>
-                    {t.NEW_PLAN}
-                </PrimaryButton>
-            </div>
-
-            <PrimaryButton onClick={() => setCurrentScreen('main')} className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-        </div>
-    );
-};
-
-
-// 5. Eventos y Detalle (Actualizado con CalendarView)
-
-// Helper para obtener el primer día del mes y el número total de días
-const getCalendarDetails = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-
-    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
-    const daysInMonth = lastDayOfMonth.getDate();
-
-    return { year, month, firstDayOfMonth, daysInMonth, startDayOfWeek };
-};
-
-// Componente de Calendario
-const CalendarView = ({ events, selectedDate, setSelectedDate, onEventClick }) => {
-    const { t, theme } = useAppContext();
-    const [currentDate, setCurrentDate] = useState(new Date());
-
-    const { year, month, daysInMonth, startDayOfWeek } = getCalendarDetails(currentDate);
-
-    // Mapear eventos por fecha para búsqueda rápida: "YYYY-MM-DD" -> [event1, event2]
-    const eventsByDate = events.reduce((acc, event) => {
-        const dateKey = event.date; // already "YYYY-MM-DD"
-        acc[dateKey] = acc[dateKey] ? [...acc[dateKey], event] : [event];
-        return acc;
-    }, {});
-
-    const daysArray = [];
-    // Relleno de días vacíos del mes anterior
-    for (let i = 0; i < startDayOfWeek; i++) {
-        daysArray.push(null);
-    }
-
-    // Días del mes actual
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const hasEvent = !!eventsByDate[dateKey];
-        const isSelected = selectedDate && selectedDate.toDateString() === date.toDateString();
-        
-        daysArray.push({ date, day, hasEvent, isSelected, dateKey });
-    }
-
-    // Navegación
-    const changeMonth = (amount) => {
-        const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + amount));
-        setCurrentDate(newDate);
-        setSelectedDate(null); // Reset selection when month changes
-    };
-
-    const handleDayClick = (dayObj) => {
-        if (!dayObj) return;
-        setSelectedDate(dayObj.date);
-    };
-
-    const headerClass = `text-center py-2 font-bold text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`;
-    const cardStyle = `p-6 rounded-xl shadow-xl space-y-4 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`;
-
-    return (
-        <div className={cardStyle}>
-            {/* Header de Navegación */}
-            <div className="flex justify-between items-center mb-4">
-                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full text-emerald-500 hover:bg-emerald-500/10 transition-colors"><ChevronLeft className="w-6 h-6"/></button>
-                <h4 className="text-xl font-bold text-emerald-400">
-                    {t.MONTH_NAMES[month]} {year}
-                </h4>
-                <button onClick={() => changeMonth(1)} className="p-2 rounded-full text-emerald-500 hover:bg-emerald-500/10 transition-colors"><ChevronRight className="w-6 h-6"/></button>
-            </div>
-
-            {/* Días de la semana */}
-            <div className="grid grid-cols-7 gap-1">
-                {t.DAY_NAMES_SHORT.map(dayName => (
-                    <div key={dayName} className={headerClass}>{dayName}</div>
-                ))}
-            </div>
-
-            {/* Días del mes */}
-            <div className="grid grid-cols-7 gap-1">
-                {daysArray.map((dayObj, index) => (
-                    <div
-                        key={index}
-                        onClick={() => handleDayClick(dayObj)}
-                        className={`aspect-square flex flex-col items-center justify-center p-1 rounded-lg transition-all text-sm font-semibold
-                            ${!dayObj ? 'bg-transparent' : 
-                                dayObj.isSelected ? 'bg-emerald-500 text-white shadow-lg transform scale-105' :
-                                dayObj.hasEvent ? (theme === 'dark' ? 'bg-emerald-500/30 text-emerald-300 hover:bg-emerald-500/50' : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200') :
-                                (theme === 'dark' ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-800 hover:bg-gray-100')
-                            }
-                            ${dayObj && 'cursor-pointer'}`}
-                    >
-                        {dayObj ? dayObj.day : ''}
-                        {dayObj && dayObj.hasEvent && !dayObj.isSelected && (
-                            <div className="w-1.5 h-1.5 bg-red-400 rounded-full mt-1"></div> // Punto rojo para indicar evento
-                        )}
-                    </div>
-                ))}
-            </div>
-
-            {/* Lista de Eventos Seleccionados */}
-            {selectedDate && (
-                <div className={`mt-6 p-4 rounded-xl border-t-4 border-emerald-500 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className="font-bold text-lg mb-3">{t.EVENTS_FOR} {selectedDate.toLocaleDateString(t.language)}:</p>
-                    {
-                        (eventsByDate[selectedDate.toISOString().split('T')[0]] || []).length > 0 ? (
-                            <ul className="space-y-2">
-                                {(eventsByDate[selectedDate.toISOString().split('T')[0]] || []).map(event => (
-                                    <li 
-                                        key={event.id} 
-                                        onClick={() => onEventClick(event)}
-                                        className="text-emerald-400 font-medium cursor-pointer hover:underline text-sm flex items-center space-x-2"
-                                    >
-                                        <Calendar className="w-4 h-4 flex-shrink-0"/>
-                                        <span>{event[`title_${t.language}`]}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-gray-500 italic text-sm">{t.NO_EVENTS}</p>
-                        )
+            try {
+                onSnapshot(q, (snapshot) => {
+                    prayerList.innerHTML = '';
+                    if (snapshot.empty) {
+                        prayerList.innerHTML = '<div class="text-center text-gray-500">Aún no hay peticiones de oración. ¡Sé el primero!</div>';
+                        return;
                     }
-                </div>
-            )}
-        </div>
-    );
-};
+                    
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString('es-ES') : 'Fecha desconocida';
+                        
+                        // Usamos un nombre genérico para el usuario, ya que no estamos pidiendo un nombre explícito
+                        const usernameDisplay = `Usuario Anónimo (ID: ${userId.substring(0, 8)}...)`;
 
-
-const EventsListScreen = ({ setCurrentScreen, setSelectedEvent }) => {
-  const { db, t, theme, getCollectionPath } = useAppContext();
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(null);
-
-  // Mock de datos de eventos para el calendario.
-  useEffect(() => {
-    // Generar 3 eventos aleatorios en el mes actual y 1 en el siguiente.
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-
-    const mockEvents = [
-        { id: '1', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-05`, title_es: 'Estudio Profundo de la Palabra', title_en: 'In-Depth Word Study', description_es: 'Comienzo de nueva serie de estudios.', description_en: 'Start of a new study series.', icon: 'BookOpen', photo: "https://placehold.co/600x300/10b981/ffffff?text=Estudio"},
-        { id: '2', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-15`, title_es: 'Concierto de Alabanza', title_en: 'Praise Concert', description_es: 'Noche de adoración con el ministerio de alabanza.', description_en: 'Worship night with the praise ministry.', icon: 'Zap', photo: "https://placehold.co/600x300/10b981/ffffff?text=Concierto"},
-        { id: '3', date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-28`, title_es: 'Vigilia de Oración', title_en: 'Prayer Vigil', description_es: 'Noche de intercesión por la obra y los hermanos.', description_en: 'Night of intercession for the work and brethren.', icon: 'HeartHandshake', photo: "https://placehold.co/600x300/10b981/ffffff?text=Vigilia"},
-        // Evento en el mes siguiente
-        { id: '4', date: `${currentYear}-${String(currentMonth + 2).padStart(2, '0')}-10`, title_es: 'Campaña Evangelística', title_en: 'Evangelistic Campaign', description_es: 'Lanzamiento de la gran campaña anual.', description_en: 'Launch of the great annual campaign.', icon: 'Globe', photo: "https://placehold.co/600x300/10b981/ffffff?text=Campana"},
-    ];
-
-    if (!db) {
-        setEvents(mockEvents);
-        setLoading(false);
-        return;
-    }
-    // Lógica real de Firestore aquí... (omitiendo por la limitación de la implementación de la db)
-    setEvents(mockEvents);
-    setLoading(false);
-
-    // return () => unsubscribe(); // Si se usara onSnapshot
-  }, [db, getCollectionPath]);
-
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setCurrentScreen('eventDetail');
-  };
-
-  if (loading) return <div className="p-8 text-center text-emerald-400"><Loader2 className="animate-spin inline mr-2"/> Cargando Eventos...</div>;
-
-  return (
-    <div className="p-4 sm:p-8">
-      <h2 className="text-4xl font-extrabold text-emerald-400 text-center mb-8">{t.MENU_EVENTS}</h2>
-      
-      <div className="max-w-4xl mx-auto">
-        <CalendarView 
-            events={events} 
-            selectedDate={selectedDate} 
-            setSelectedDate={setSelectedDate}
-            onEventClick={handleEventClick}
-        />
-      </div>
-
-      <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-8 mx-auto w-full max-w-xs bg-gray-600 hover:bg-gray-700">
-        Volver al Menú
-      </PrimaryButton>
-    </div>
-  );
-};
-
-const EventDetailScreen = ({ event, setCurrentScreen }) => {
-  const { t, theme } = useAppContext();
-
-  if (!event) {
-    return <p className="p-8 text-center text-red-400">Error: Evento no encontrado.</p>;
-  }
-
-  return (
-    <div className="p-8">
-      <div className={`p-6 rounded-2xl shadow-2xl max-w-2xl mx-auto transition-colors ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
-        <h2 className="text-4xl font-extrabold text-emerald-500 mb-4">{event[`title_${t.language}`]}</h2>
-        <img src={event.photo || "https://placehold.co/600x300/10b981/ffffff?text=Evento"} alt="Foto del Evento" className="w-full h-auto object-cover rounded-lg mb-6"/>
-        <p className="text-xl font-medium mb-6">{new Date(event.date).toLocaleDateString(t.language, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-
-        <p className={`mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{event[`description_${t.language}`]}</p>
-
-        <PrimaryButton onClick={() => setCurrentScreen('events')} className="bg-gray-600 hover:bg-gray-700">
-          Volver a Eventos
-        </PrimaryButton>
-      </div>
-    </div>
-  );
-};
-
-
-// 6. Ajustes y Cerrar Sesión (Actualizado con Toggles)
-const SettingsScreen = ({ setCurrentScreen }) => {
-  const { t, language, setLanguage, theme, setTheme, auth } = useAppContext();
-  
-  // Usamos localStorage para simular la persistencia de notificaciones
-  const [liveNotif, setLiveNotif] = useState(() => localStorage.getItem('notif_live') === 'true');
-  const [eventNotif, setEventNotif] = useState(() => localStorage.getItem('notif_events') === 'true');
-  const [newsNotif, setNewsNotif] = useState(() => localStorage.getItem('notif_news') === 'true');
-
-  const handleToggle = (key, setter, value) => {
-    setter(value);
-    localStorage.setItem(key, value);
-  };
-
-  const handleLogout = async () => {
-    try {
-      if (auth) {
-        await signOut(auth);
-      }
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
-  };
-
-  return (
-    <div className="p-8 max-w-xl mx-auto">
-      <h2 className="text-4xl font-extrabold text-emerald-400 text-center mb-8">{t.SETTINGS_TITLE}</h2>
-
-      <div className={`p-6 rounded-2xl shadow-xl space-y-6 transition-colors ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-
-        {/* Selector de Idioma */}
-        <div>
-          <label className={`block text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{t.SETTINGS_LANGUAGE}</label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className={`w-full p-3 border rounded-xl appearance-none cursor-pointer focus:ring-emerald-500 focus:border-emerald-500 transition-colors
-              ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-          >
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-
-        {/* Selector de Tema */}
-        <div>
-          <label className={`block text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{t.SETTINGS_THEME}</label>
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setTheme('dark')}
-              className={`flex items-center space-x-2 p-3 rounded-xl transition-all ${theme === 'dark' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-800'}`}
-            >
-              <Moon className="w-5 h-5" />
-              <span>Oscuro</span>
-            </button>
-            <button
-              onClick={() => setTheme('light')}
-              className={`flex items-center space-x-2 p-3 rounded-xl transition-all ${theme === 'light' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-800'}`}
-            >
-              <Sun className="w-5 h-5" />
-              <span>Claro</span>
-            </button>
-          </div>
-        </div>
-        
-        {/* Toggles de Notificaciones */}
-        <div className="pt-4 border-t border-gray-700/50">
-            <h3 className={`text-xl font-semibold mb-3 flex items-center space-x-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}><Bell className="w-5 h-5"/><span>{t.SETTINGS_NOTIFICATIONS}</span></h3>
-            <div className="space-y-2">
-                <Toggle 
-                    label={t.NOTIF_LIVE} 
-                    checked={liveNotif} 
-                    onChange={(val) => handleToggle('notif_live', setLiveNotif, val)} 
-                />
-                <Toggle 
-                    label={t.NOTIF_EVENTS} 
-                    checked={eventNotif} 
-                    onChange={(val) => handleToggle('notif_events', setEventNotif, val)} 
-                />
-                <Toggle 
-                    label={t.NOTIF_NEWS} 
-                    checked={newsNotif} 
-                    onChange={(val) => handleToggle('notif_news', setNewsNotif, val)} 
-                />
-            </div>
-        </div>
-
-        {/* Botón de Cerrar Sesión */}
-        <PrimaryButton onClick={handleLogout} className="bg-red-600 hover:bg-red-700 mt-6" icon={LogOut}>
-          {t.LOGOUT}
-        </PrimaryButton>
-
-      </div>
-
-      <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-8 mx-auto w-full bg-gray-600 hover:bg-gray-700">
-        Volver al Menú
-      </PrimaryButton>
-    </div>
-  );
-};
-
-
-// 7. Pantalla Principal (Menú - No Cambia)
-const MainScreen = ({ setCurrentScreen, setSelectedEvent }) => {
-  const { t, theme, userId } = useAppContext();
-
-  // Definición de todos los ítems del menú con sus iconos de lucide-react
-  const menuItems = [
-    { title: t.MENU_CHURCH, icon: Home, screen: 'church' },
-    { title: t.MENU_MINISTRIES, icon: Users, screen: 'ministries' },
-    { title: t.MENU_READING_PLAN, icon: BookOpen, screen: 'readingPlan' },
-    { title: t.MENU_NEWS, icon: Newspaper, screen: 'news' },
-    { title: t.MENU_MESSAGES, icon: MessageSquare, screen: 'messages' },
-    { title: t.MENU_LIVE, icon: Video, screen: 'live' },
-    { title: t.MENU_EVENTS, icon: Calendar, screen: 'events' },
-    { title: t.MENU_PRAYER_WALL, icon: HeartHandshake, screen: 'prayerWall' },
-    { title: t.MENU_PRAYER_PLAN, icon: Clock, screen: 'prayerPlan' },
-    { title: t.MENU_BIBLE_STUDY, icon: BookOpen, screen: 'live' }, // Usa 'live' para el reproductor Twitch
-    { title: t.MENU_DEVOCIONAL, icon: Sun, screen: 'devotional' },
-  ];
-
-  // Manejador para la navegación.
-  const handleMenuClick = (item) => {
-    // Si la pantalla es la misma que la del menú, navega directamente.
-    if (item.screen === 'events') setCurrentScreen('events');
-    else if (item.screen === 'prayerWall') setCurrentScreen('prayerWall');
-    else if (item.screen === 'prayerPlan') setCurrentScreen('prayerPlan');
-    else if (item.screen === 'live') setCurrentScreen('live');
-    else if (item.screen === 'church') setCurrentScreen('church');
-    else if (item.screen === 'ministries') setCurrentScreen('ministries');
-    else if (item.screen === 'readingPlan') setCurrentScreen('readingPlan');
-    else if (item.screen === 'news') setCurrentScreen('news');
-    else if (item.screen === 'messages') setCurrentScreen('messages');
-    else if (item.screen === 'devotional') setCurrentScreen('devotional');
-    else {
-      setCurrentScreen('info-generic');
-      setSelectedEvent(item.title); // Usamos setSelectedEvent para almacenar el título genérico
-    }
-  };
-
-  return (
-    <div className={`relative min-h-screen p-4 pt-20 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-      <BackgroundVideo theme={theme} />
-
-      {/* Barra superior con Logo y Menú/Ajustes */}
-      <div className="fixed top-0 left-0 right-0 z-20 p-4 flex justify-between items-center backdrop-blur-md bg-gray-900/50 shadow-lg">
-        {/* Logo Pequeño (Ajustado al color esmeralda) */}
-        <img src="https://placehold.co/50x50/10b981/ffffff?text=R" alt="Logo Pequeño" className="w-10 h-10 rounded-full border-2 border-emerald-400"/>
-        <h1 className="text-xl font-bold text-emerald-400 hidden sm:block">{t.APP_TITLE}</h1>
-        <div className="flex items-center space-x-3">
-          {/* Identificador de Usuario */}
-          <span className="text-xs font-mono p-1 rounded bg-emerald-500/30 text-emerald-100 hidden sm:block">ID: {userId}</span>
-
-          {/* Iconos de Redes Sociales */}
-          <a href="https://facebook.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Facebook className="w-5 h-5"/></a>
-          <a href="https://instagram.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Instagram className="w-5 h-5"/></a>
-          <a href="https://twitch.tv/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Video className="w-5 h-5"/></a>
-          <a href="https://twitter.com/radioresucitada" target="_blank" className="text-gray-200 hover:text-emerald-400 transition-colors"><Twitter className="w-5 h-5"/></a>
-
-          {/* Botón de Seguir la página de radio (Logo Resucitada) */}
-          <a href="#" target="_blank" className="p-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:ring-2 focus:ring-emerald-400">
-            <Zap className="w-6 h-6" />
-          </a>
-
-          {/* Ajustes */}
-          <button onClick={() => setCurrentScreen('settings')} className="p-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors focus:ring-2 focus:ring-emerald-400">
-            <Settings className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      <div className="relative z-10 p-4">
-        <h2 className="text-3xl font-extrabold text-center mb-8 text-shadow-lg text-emerald-400">{t.WELCOME_TITLE}!</h2>
-
-        {/* Grid de Menú Principal */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-w-6xl mx-auto">
-          {menuItems.map((item) => (
-            <MainMenuItem
-              key={item.title}
-              title={item.title}
-              icon={item.icon}
-              onClick={() => handleMenuClick(item)}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Pantalla Genérica de Información (Usada para ítems que no requieren lógica compleja - No Cambia)
-const GenericInfoScreen = ({ setCurrentScreen, title }) => {
-  const { t, theme } = useAppContext();
-  return (
-    <div className="p-8 max-w-xl mx-auto">
-      <div className={`p-6 rounded-2xl shadow-2xl transition-colors ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
-        <h2 className="text-3xl font-extrabold text-emerald-500 mb-4">{title}</h2>
-        <p className={`mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-          {t.APP_TITLE} - Esta es la página de información para **{title}**. Aquí iría todo el contenido de la subpágina, incluyendo texto, videos y más detalles sobre la sección.
-        </p>
-        <p className="text-sm italic">
-          (Simulación de navegación. El contenido real sería cargado aquí).
-        </p>
-        <PrimaryButton onClick={() => setCurrentScreen('main')} className="mt-6 bg-gray-600 hover:bg-gray-700">
-          Volver al Menú
-        </PrimaryButton>
-      </div>
-    </div>
-  );
-};
-
-
-// --- COMPONENTE PRINCIPAL DE LA APLICACIÓN ---
-const AppContent = () => {
-  const { isAuthReady, userId } = useAppContext();
-  const [currentScreen, setCurrentScreen] = useState('loading');
-  const [selectedEvent, setSelectedEvent] = useState(null);
-
-  useEffect(() => {
-    if (isAuthReady) {
-      if (userId) {
-        setCurrentScreen('main');
-      } else {
-        setCurrentScreen('login');
-      }
-    }
-  }, [isAuthReady, userId]);
-
-  useEffect(() => {
-    document.body.setAttribute('data-screen', currentScreen);
-  }, [currentScreen]);
-
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'login':
-      case 'register':
-        return <AuthScreen setCurrentScreen={setCurrentScreen} />;
-      case 'main':
-        return <MainScreen setCurrentScreen={setCurrentScreen} setSelectedEvent={setSelectedEvent} />;
-      case 'settings':
-        return <SettingsScreen setCurrentScreen={setCurrentScreen} />;
-      case 'events':
-        return <EventsListScreen setCurrentScreen={setCurrentScreen} setSelectedEvent={setSelectedEvent} />;
-      case 'eventDetail':
-        return <EventDetailScreen event={selectedEvent} setCurrentScreen={setCurrentScreen} />;
-      case 'prayerWall':
-        return <PrayerSection setCurrentScreen={setCurrentScreen} />;
-      case 'prayerPlan':
-        return <PrayerPlanConfig setCurrentScreen={setCurrentScreen} />;
-      case 'live':
-        return <LiveAndBibleStudyScreen setCurrentScreen={setCurrentScreen} />;
-      case 'church':
-        return <ChurchScreen setCurrentScreen={setCurrentScreen} />;
-      case 'ministries':
-        return <MinistriesScreen setCurrentScreen={setCurrentScreen} />;
-      case 'readingPlan':
-        return <ReadingPlanScreen setCurrentScreen={setCurrentScreen} />;
-      case 'news':
-        return <NewsScreen setCurrentScreen={setCurrentScreen} />;
-      case 'messages':
-        return <MessagesScreen setCurrentScreen={setCurrentScreen} />;
-      case 'devotional':
-        return <DevotionalScreen setCurrentScreen={setCurrentScreen} />;
-      case 'loading':
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center min-h-screen">
-            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
-            <p className="mt-4 text-white">Cargando aplicación...</p>
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen font-sans">
-      <style>{`
-        /* Animación para simular el loop del video/fondo dinámico */
-        @keyframes pulse-slow {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-pulse-slow {
-          background-size: 400% 400%;
-          animation: pulse-slow 20s ease infinite;
+                        const requestHtml = `
+                            <div class="bg-gray-800 p-4 rounded-xl shadow-md border-l-4 border-emerald-500">
+                                <p class="text-gray-300 italic mb-2">"${data.text}"</p>
+                                <div class="text-right text-xs text-gray-500">
+                                    <span>${usernameDisplay} - ${date}</span>
+                                </div>
+                            </div>
+                        `;
+                        prayerList.innerHTML += requestHtml;
+                    });
+                });
+            } catch (error) {
+                console.error("Error al cargar peticiones de oración:", error);
+                prayerList.innerHTML = '<div class="text-center text-red-500">Error al cargar las peticiones.</div>';
+            }
         }
 
-        /* Oculta el scrollbar en pantallas de autenticación */
-        body[data-screen="login"] { overflow: hidden; }
-        body[data-screen="register"] { overflow: hidden; }
-      `}</style>
-      {renderScreen()}
-    </div>
-  );
-};
+        document.getElementById('prayer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('prayer-request').value.trim();
+            const statusElement = document.getElementById('prayer-status');
 
-const App = () => (
-  <AppProvider>
-    <AppContent />
-  </AppProvider>
-);
+            if (!text || !db || !userId) {
+                statusElement.textContent = "Error: El texto no puede estar vacío o Firebase no está listo.";
+                statusElement.classList.remove('text-emerald-400');
+                statusElement.classList.add('text-red-400');
+                return;
+            }
 
-export default App;
+            try {
+                const prayerCollectionRef = collection(db, `artifacts/${appId}/public/data/prayerRequests`);
+                await addDoc(prayerCollectionRef, {
+                    text: text,
+                    userId: userId,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('prayer-request').value = '';
+                statusElement.textContent = "¡Petición de oración enviada con éxito!";
+                statusElement.classList.remove('text-red-400');
+                statusElement.classList.add('text-emerald-400');
+                setTimeout(() => statusElement.textContent = '', 3000);
+            } catch (error) {
+                console.error("Error al añadir la petición:", error);
+                statusElement.textContent = `Error: No se pudo enviar. ${error.message}`;
+                statusElement.classList.remove('text-emerald-400');
+                statusElement.classList.add('text-red-400');
+            }
+        });
+
+        // --- LÓGICA DEL PLAN DEVOCIONAL (FIREBASE - SET DOC) ---
+
+        document.getElementById('plan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const planTime = document.getElementById('plan-time').value;
+            const days = Array.from(document.querySelectorAll('input[name="plan-day"]:checked')).map(cb => cb.value);
+            const statusElement = document.getElementById('plan-status');
+
+            if (!planTime || days.length === 0 || !db || !userId) {
+                statusElement.textContent = "Error: Debe seleccionar una hora y al menos un día.";
+                statusElement.classList.remove('text-emerald-400');
+                statusElement.classList.add('text-red-400');
+                return;
+            }
+
+            const planData = {
+                reminderTime: planTime,
+                days: days,
+                lastUpdated: serverTimestamp()
+            };
+
+            try {
+                // Usamos un documento fijo 'mainPlan' dentro de la colección privada del usuario
+                const planDocRef = doc(db, `artifacts/${appId}/users/${userId}/devotionalPlans/mainPlan`);
+                await setDoc(planDocRef, planData, { merge: true });
+
+                statusElement.textContent = "¡Plan personal guardado con éxito!";
+                statusElement.classList.remove('text-red-400');
+                statusElement.classList.add('text-emerald-400');
+                setTimeout(() => statusElement.textContent = '', 3000);
+            } catch (error) {
+                console.error("Error al guardar el plan:", error);
+                statusElement.textContent = `Error: No se pudo guardar el plan. ${error.message}`;
+                statusElement.classList.remove('text-emerald-400');
+                statusElement.classList.add('text-red-400');
+            }
+        });
+
+        // --- INICIALIZACIÓN DE LA PÁGINA ---
+        window.onload = function() {
+            lucide.createIcons(); // Inicializa los iconos de Lucide
+            renderMinistries(); // Rellena el grid de ministerios
+            renderCalendar(); // Genera el calendario
+        };
+
+        // Escucha global para cerrar modales al presionar ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal-backdrop');
+                modals.forEach(modal => {
+                    if (!modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+
+
+
