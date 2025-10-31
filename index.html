@@ -16,16 +16,25 @@
             overflow-x: hidden;
             background-color: #0d0d0d; /* Fondo muy oscuro */
         }
-        /* Color Jade Green para acentos y sombras */
-        .jade-accent {
-            background-color: #10b981; /* Tailwind emerald-500 */
+        
+        /* --- Paleta de Color Naranja Dorado Cobre --- */
+        .accent-color {
+            background-color: #F27A3A; /* Color principal de botones/acentos */
         }
-        .jade-glow {
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.7), 0 0 20px rgba(16, 185, 129, 0.5);
+        .light-glow-text {
+            color: #FFB380; /* Para texto y bordes claros/brillantes */
+        }
+        .accent-border {
+            border-color: #F27A3A;
+        }
+
+        .warm-glow {
+            /* Sombra usando el tono claro #FFB380 para el efecto de luz cálida */
+            box-shadow: 0 0 10px rgba(255, 179, 128, 0.9), 0 0 20px rgba(255, 179, 128, 0.6);
             transition: all 0.3s;
         }
-        .jade-glow-hover:hover {
-            box-shadow: 0 0 15px rgba(16, 185, 129, 1), 0 0 30px rgba(16, 185, 129, 0.7);
+        .warm-glow-hover:hover {
+            box-shadow: 0 0 15px rgba(255, 179, 128, 1), 0 0 30px rgba(255, 179, 128, 0.8);
             transform: translateY(-2px);
         }
         .modal-backdrop {
@@ -42,7 +51,7 @@
             width: auto;
             height: auto;
             z-index: -10;
-            filter: brightness(0.4) grayscale(0.2); /* Oscurecer y sutilmente desaturar */
+            filter: brightness(0.3) grayscale(0.2); /* Oscurecer y sutilmente desaturar */
         }
         .content-overlay {
             position: relative;
@@ -50,11 +59,8 @@
             min-height: 100vh;
         }
 
-        /* Estilo para los botones flotantes del menú principal */
+        /* Estilo para los botones flotantes del menú principal (Sin dimensiones fijas aquí, usamos Tailwind w-14/h-14) */
         .floating-nav-button {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -66,6 +72,7 @@
             opacity: 1;
             transform: scale(1);
         }
+        /* Retardos para el efecto de cascada */
         .menu-open .floating-nav-button:nth-child(1) { transition-delay: 0.1s; }
         .menu-open .floating-nav-button:nth-child(2) { transition-delay: 0.15s; }
         .menu-open .floating-nav-button:nth-child(3) { transition-delay: 0.2s; }
@@ -74,6 +81,10 @@
         .menu-open .floating-nav-button:nth-child(6) { transition-delay: 0.35s; }
         .menu-open .floating-nav-button:nth-child(7) { transition-delay: 0.4s; }
         .menu-open .floating-nav-button:nth-child(8) { transition-delay: 0.45s; }
+        .menu-open .floating-nav-button:nth-child(9) { transition-delay: 0.5s; }
+        .menu-open .floating-nav-button:nth-child(10) { transition-delay: 0.55s; }
+        .menu-open .floating-nav-button:nth-child(11) { transition-delay: 0.6s; }
+
         
         /* Estilo para el calendario */
         .event-day {
@@ -82,8 +93,8 @@
             position: relative;
         }
         .event-day.has-event {
-            background-color: #065f46; /* dark green */
-            border-color: #10B981;
+            background-color: #8c4722; /* Un naranja oscuro como base */
+            border-color: #F27A3A; /* Borde con el color de acento */
         }
     </style>
 </head>
@@ -91,7 +102,6 @@
 
     <!-- Video de Fondo Continuo -->
     <video autoplay loop muted id="video-background">
-        <!-- Reemplaza con la URL de tu video. Usamos un placeholder de muestra por ahora. -->
         <source src="https://assets.mixkit.co/videos/preview/mixkit-dark-blue-and-purple-ink-drops-30114-large.mp4" type="video/mp4">
         Tu navegador no soporta videos en HTML5.
     </video>
@@ -101,26 +111,26 @@
 
         <!-- Banner Superior (Radio Logo y Nombre) -->
         <header class="p-4 flex justify-between items-center bg-black bg-opacity-70 shadow-2xl sticky top-0 z-50">
-            <div class="flex items-center space-x-3 jade-text-glow">
-                <i data-lucide="radio" class="w-8 h-8 text-emerald-500"></i>
-                <h1 class="text-3xl font-extrabold tracking-widest uppercase text-emerald-300">Radio Visión</h1>
+            <div class="flex items-center space-x-3">
+                <i data-lucide="radio" class="w-8 h-8 light-glow-text"></i>
+                <h1 class="text-3xl font-extrabold tracking-widest uppercase light-glow-text" data-i18n="radio_name">Radio Visión</h1>
             </div>
 
             <!-- Botón de Ajustes (Flotante Superior Derecha) -->
-            <button onclick="toggleModal('settingsModal')" class="p-3 jade-accent rounded-full jade-glow jade-glow-hover transition duration-300" title="Ajustes">
+            <button onclick="toggleModal('settingsModal')" class="p-3 accent-color rounded-full warm-glow warm-glow-hover transition duration-300" title="Ajustes">
                 <i data-lucide="settings" class="w-6 h-6 text-gray-900"></i>
             </button>
         </header>
 
         <!-- Sección de Contenido Principal (A modo de ejemplo) -->
         <main class="p-8 md:p-16 text-center">
-            <div class="bg-black bg-opacity-70 p-6 md:p-12 rounded-xl max-w-4xl mx-auto border-4 border-emerald-500 jade-glow">
-                <h2 class="text-4xl md:text-6xl font-black mb-4 text-emerald-300 jade-text-glow">Bienvenido a Nuestro Hogar Digital</h2>
-                <p class="text-xl text-gray-300">Conéctate a la transmisión en vivo, explora nuestros ministerios y únete a nuestra comunidad de fe.</p>
+            <div class="bg-black bg-opacity-70 p-6 md:p-12 rounded-xl max-w-4xl mx-auto border-4 accent-border warm-glow">
+                <h2 class="text-4xl md:text-6xl font-black mb-4 light-glow-text" data-i18n="welcome_title">Bienvenido a Nuestro Hogar Digital</h2>
+                <p class="text-xl text-gray-300" data-i18n="welcome_subtitle">Conéctate a la transmisión en vivo, explora nuestros ministerios y únete a nuestra comunidad de fe.</p>
                 <div class="mt-8">
                     <!-- Botón Destacado para la Transmisión -->
-                    <button onclick="showTwitchStream()" class="px-8 py-4 jade-accent text-gray-900 font-bold text-lg rounded-full shadow-2xl hover:bg-emerald-400 transition transform hover:scale-105">
-                        <i data-lucide="zap" class="inline-block mr-2 w-5 h-5"></i> ¡Ver Transmisión en Vivo Ahora!
+                    <button onclick="showTwitchStream()" class="px-8 py-4 accent-color text-gray-900 font-bold text-lg rounded-full shadow-2xl hover:bg-[#D46C34] transition transform hover:scale-105">
+                        <i data-lucide="zap" class="inline-block mr-2 w-5 h-5"></i> <span data-i18n="live_stream_button">¡Ver Transmisión en Vivo Ahora!</span>
                     </button>
                 </div>
             </div>
@@ -128,57 +138,58 @@
 
         <!-- Muro de Oración (Prayer Wall) -->
         <section id="prayer-wall" class="p-8 md:p-16 max-w-4xl mx-auto hidden">
-            <h2 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Muro de Oración</h2>
+            <h2 class="text-3xl font-bold mb-6 light-glow-text text-center" data-i18n="prayer_wall_title">Muro de Oración</h2>
             <div class="bg-gray-800 p-6 rounded-xl shadow-inner mb-6">
                 <form id="prayer-form">
-                    <textarea id="prayer-request" class="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-emerald-500 focus:border-emerald-500 border-none" rows="3" placeholder="Escribe tu petición de oración aquí..." required></textarea>
-                    <button type="submit" class="mt-4 px-6 py-2 jade-accent text-gray-900 font-bold rounded-lg jade-glow-hover">Enviar Petición</button>
-                    <p id="prayer-status" class="mt-2 text-sm text-emerald-400"></p>
+                    <textarea id="prayer-request" class="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-[#F27A3A] focus:border-[#F27A3A] border-none" rows="3" data-i18n-placeholder="prayer_input_placeholder" required></textarea>
+                    <button type="submit" class="mt-4 px-6 py-2 accent-color text-gray-900 font-bold rounded-lg warm-glow-hover" data-i18n="send_request_button">Enviar Petición</button>
+                    <p id="prayer-status" class="mt-2 text-sm light-glow-text"></p>
                 </form>
             </div>
             <div id="prayer-list" class="space-y-4">
                 <!-- Las peticiones se cargarán aquí -->
-                <div class="text-center text-gray-400">Cargando peticiones...</div>
+                <div class="text-center text-gray-400" data-i18n="loading_requests">Cargando peticiones...</div>
             </div>
         </section>
 
         <!-- Plan Personal de Lectura/Devocional -->
         <section id="devotional-plan" class="p-8 md:p-16 max-w-4xl mx-auto hidden">
-            <h2 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Configura tu Plan Personal</h2>
+            <h2 class="text-3xl font-bold mb-6 light-glow-text text-center" data-i18n="personal_plan_title">Configura tu Plan Personal</h2>
             <div class="bg-gray-800 p-6 rounded-xl shadow-inner">
                 <form id="plan-form">
                     <div class="mb-4">
-                        <label for="plan-time" class="block mb-2 text-gray-300">Hora de Recordatorio Diario:</label>
-                        <input type="time" id="plan-time" class="w-full p-3 rounded-lg bg-gray-700 text-white border-none focus:ring-emerald-500 focus:border-emerald-500" required>
+                        <label for="plan-time" class="block mb-2 text-gray-300" data-i18n="reminder_time_label">Hora de Recordatorio Diario:</label>
+                        <input type="time" id="plan-time" class="w-full p-3 rounded-lg bg-gray-700 text-white border-none focus:ring-[#F27A3A] focus:border-[#F27A3A]" required>
                     </div>
                     <div class="mb-6">
-                        <label class="block mb-2 text-gray-300">Días para Recordar:</label>
+                        <label class="block mb-2 text-gray-300" data-i18n="reminder_days_label">Días para Recordar:</label>
                         <div class="grid grid-cols-7 gap-2 text-center">
+                            <!-- Los días de la semana no se traducen por i18n ya que es un label simple, pero el JS lo manejará -->
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="L" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Lun
+                                <input type="checkbox" name="plan-day" value="L" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]" checked> <span data-i18n="day_mon">Lun</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="M" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Mar
+                                <input type="checkbox" name="plan-day" value="M" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]" checked> <span data-i18n="day_tue">Mar</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="X" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Mié
+                                <input type="checkbox" name="plan-day" value="X" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]" checked> <span data-i18n="day_wed">Mié</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="J" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Jue
+                                <input type="checkbox" name="plan-day" value="J" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]" checked> <span data-i18n="day_thu">Jue</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="V" class="rounded text-emerald-500 focus:ring-emerald-500" checked> Vie
+                                <input type="checkbox" name="plan-day" value="V" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]" checked> <span data-i18n="day_fri">Vie</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="S" class="rounded text-emerald-500 focus:ring-emerald-500"> Sáb
+                                <input type="checkbox" name="plan-day" value="S" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]"> <span data-i18n="day_sat">Sáb</span>
                             </label>
                             <label class="p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition">
-                                <input type="checkbox" name="plan-day" value="D" class="rounded text-emerald-500 focus:ring-emerald-500"> Dom
+                                <input type="checkbox" name="plan-day" value="D" class="rounded text-[#F27A3A] focus:ring-[#F27A3A]"> <span data-i18n="day_sun">Dom</span>
                             </label>
                         </div>
                     </div>
-                    <button type="submit" class="w-full py-3 jade-accent text-gray-900 font-bold rounded-lg jade-glow-hover">Guardar Plan</button>
-                    <p id="plan-status" class="mt-3 text-sm text-emerald-400 text-center"></p>
+                    <button type="submit" class="w-full py-3 accent-color text-gray-900 font-bold rounded-lg warm-glow-hover" data-i18n="save_plan_button">Guardar Plan</button>
+                    <p id="plan-status" class="mt-3 text-sm light-glow-text text-center"></p>
                 </form>
             </div>
         </section>
@@ -186,142 +197,155 @@
 
         <!-- Iconos de Redes Sociales (Fijos en la esquina inferior izquierda) -->
         <div class="fixed bottom-4 left-4 flex flex-col space-y-3 z-40">
-            <a href="https://www.facebook.com/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Facebook">
-                <i data-lucide="facebook" class="w-6 h-6 text-emerald-500"></i>
+            <a href="https://www.facebook.com/" target="_blank" class="p-3 bg-gray-800 rounded-full warm-glow warm-glow-hover transition duration-300" title="Facebook">
+                <i data-lucide="facebook" class="w-6 h-6 light-glow-text"></i>
             </a>
-            <a href="https://www.instagram.com/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Instagram">
-                <i data-lucide="instagram" class="w-6 h-6 text-emerald-500"></i>
+            <a href="https://www.instagram.com/" target="_blank" class="p-3 bg-gray-800 rounded-full warm-glow warm-glow-hover transition duration-300" title="Instagram">
+                <i data-lucide="instagram" class="w-6 h-6 light-glow-text"></i>
             </a>
-            <a href="https://www.twitch.tv/" target="_blank" class="p-3 bg-gray-800 rounded-full jade-glow jade-glow-hover transition duration-300" title="Twitch">
-                <i data-lucide="twitch" class="w-6 h-6 text-emerald-500"></i>
+            <a href="https://www.twitch.tv/" target="_blank" class="p-3 bg-gray-800 rounded-full warm-glow warm-glow-hover transition duration-300" title="Twitch">
+                <i data-lucide="twitch" class="w-6 h-6 light-glow-text"></i>
             </a>
         </div>
 
         <!-- Menú Principal Flotante (FAB expandible, inferior derecha) -->
         <div id="floating-menu" class="fixed bottom-4 right-4 flex flex-col items-end z-50">
-            <!-- Botones del Menú -->
+            <!-- Botones del Menú: Reducidos a w-14 h-14 (56px) y mb-2 (0.5rem) para mejor visibilidad móvil -->
             <div id="nav-buttons" class="flex flex-col items-end menu-closed">
-                <button onclick="showSection('churchModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Iglesia">
-                    <i data-lucide="church" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('churchModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_church">
+                    <i data-lucide="church" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="toggleModal('ministriesModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Ministerios">
-                    <i data-lucide="users-2" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="toggleModal('ministriesModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_ministries">
+                    <i data-lucide="users-2" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('planModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Plan de Lectura">
-                    <i data-lucide="book-open-text" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('planModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_reading_plan">
+                    <i data-lucide="book-open-text" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('newsModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Noticias">
-                    <i data-lucide="newspaper" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('newsModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_news">
+                    <i data-lucide="newspaper" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('messagesModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Mensajes">
-                    <i data-lucide="messages-square" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('messagesModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_messages">
+                    <i data-lucide="messages-square" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showTwitchStream()" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Video en Vivo">
-                    <i data-lucide="monitor-dot" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showTwitchStream()" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_live_video">
+                    <i data-lucide="monitor-dot" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="toggleModal('eventsModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Eventos">
-                    <i data-lucide="calendar-check" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="toggleModal('eventsModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_events">
+                    <i data-lucide="calendar-check" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('prayer-wall')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Plan de Oración">
-                    <i data-lucide="hand-heart" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('prayer-wall')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_prayer_wall">
+                    <i data-lucide="hand-heart" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('bibleStudyModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Estudio Bíblico">
-                    <i data-lucide="library" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('bibleStudyModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_bible_study">
+                    <i data-lucide="library" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('worshipModal')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Adoración/Predicaciones">
-                    <i data-lucide="music-4" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('worshipModal')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_worship">
+                    <i data-lucide="music-4" class="w-6 h-6 light-glow-text"></i>
                 </button>
-                <button onclick="showSection('devotional-plan')" class="floating-nav-button bg-gray-800 rounded-full jade-glow jade-glow-hover" title="Configurar Plan Personal">
-                    <i data-lucide="list-checks" class="w-6 h-6 text-emerald-500"></i>
+                <button onclick="showSection('devotional-plan')" class="floating-nav-button bg-gray-800 rounded-full warm-glow warm-glow-hover w-14 h-14 mb-2" data-i18n-title="btn_personal_plan_config">
+                    <i data-lucide="list-checks" class="w-6 h-6 light-glow-text"></i>
                 </button>
             </div>
 
             <!-- Botón FAB Principal -->
-            <button id="fab-toggle" onclick="toggleMenu()" class="p-4 mt-4 jade-accent rounded-full jade-glow jade-glow-hover transition duration-300 transform hover:rotate-90">
+            <button id="fab-toggle" onclick="toggleMenu()" class="p-4 mt-4 accent-color rounded-full warm-glow warm-glow-hover transition duration-300 transform hover:rotate-90">
                 <i data-lucide="menu" class="w-8 h-8 text-gray-900"></i>
             </button>
         </div>
 
     </div>
     
-    <!-- MODALES: AJUSTES -->
-    <div id="settingsModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center">
-        <div class="bg-gray-900 p-8 rounded-xl w-11/12 md:w-1/3 border-4 border-emerald-500 jade-glow">
-            <h3 class="text-2xl font-bold mb-6 text-emerald-300">Ajustes y Notificaciones</h3>
+    <!-- MODALES: AJUSTES (CON FUNCIONALIDAD DE IDIOMA) -->
+    <div id="settingsModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 p-8 rounded-xl w-11/12 md:w-1/3 border-4 accent-border warm-glow">
+            <h3 class="text-2xl font-bold mb-6 light-glow-text" data-i18n="settings_title">Ajustes y Notificaciones</h3>
 
             <div class="space-y-4">
                 <!-- Notificaciones de Transmisión -->
                 <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
-                    <span>Notificaciones de Transmisión en Directo</span>
+                    <span data-i18n="notif_stream">Notificaciones de Transmisión en Directo</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" value="" id="liveStreamToggle" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#F27A3A] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F27A3A]"></div>
                     </label>
                 </div>
                 <!-- Notificaciones de Eventos -->
                 <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
-                    <span>Notificaciones de Eventos</span>
+                    <span data-i18n="notif_events">Notificaciones de Eventos</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" value="" id="eventToggle" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#F27A3A] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F27A3A]"></div>
                     </label>
                 </div>
                 <!-- Notificaciones de Noticias -->
                 <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
-                    <span>Notificaciones de Noticias</span>
+                    <span data-i18n="notif_news">Notificaciones de Noticias</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" value="" id="newsToggle" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#F27A3A] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F27A3A]"></div>
                     </label>
                 </div>
             </div>
 
+            <!-- Sección de Idioma (Funcional) -->
             <div class="mt-8 pt-4 border-t border-gray-700">
-                <p class="text-sm font-bold text-emerald-400 mb-2">Acerca de (v1.0)</p>
-                <ul class="text-sm space-y-1 text-gray-400">
-                    <li><a href="#" class="hover:text-emerald-300">Acerca del Desarrollador</a></li>
-                    <li><a href="#" class="hover:text-emerald-300">Política de Privacidad</a></li>
-                    <li><a href="#" class="hover:text-emerald-300">Términos y Condiciones</a></li>
+                <p class="text-sm font-bold light-glow-text mb-2" data-i18n="language_section">Idioma</p>
+                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                    <span id="languageLabel">Español / English</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" id="languageToggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#F27A3A] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F27A3A]"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sección Acerca de -->
+            <div class="mt-4 pt-4 border-t border-gray-700">
+                <p class="text-sm font-bold light-glow-text mb-2" data-i18n="about_section">Acerca de (v1.0)</p>
+                <ul class="text-sm space-y-2 text-gray-400">
+                    <li><a href="#" class="hover:text-[#F27A3A] transition duration-150 flex items-center"><i data-lucide="code" class="w-4 h-4 mr-2"></i> <span data-i18n="about_dev">Acerca del Desarrollador</span></a></li>
+                    <li><a href="#" class="hover:text-[#F27A3A] transition duration-150 flex items-center"><i data-lucide="shield-check" class="w-4 h-4 mr-2"></i> <span data-i18n="about_privacy">Política de Privacidad</span></a></li>
+                    <li><a href="#" class="hover:text-[#F27A3A] transition duration-150 flex items-center"><i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i> <span data-i18n="about_terms">Términos y Condiciones</span></a></li>
                 </ul>
             </div>
 
-            <button onclick="toggleModal('settingsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+            <button onclick="toggleModal('settingsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
     <!-- MODALES: MINISTERIOS (Contenedor principal) -->
     <div id="ministriesModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-4xl border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
-            <h3 class="text-3xl font-bold mb-6 text-emerald-300 text-center">Nuestros Ministerios</h3>
+        <div class="bg-gray-900 p-8 rounded-xl w-full max-w-4xl border-4 accent-border warm-glow overflow-y-auto max-h-[90vh]">
+            <h3 class="text-3xl font-bold mb-6 light-glow-text text-center" data-i18n="ministries_title">Nuestros Ministerios</h3>
             <div id="ministries-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <!-- Se poblará con JS -->
             </div>
-            <button onclick="toggleModal('ministriesModal')" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold">Cerrar</button>
+            <button onclick="toggleModal('ministriesModal')" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
     <!-- MODALES: DETALLE DE MINISTERIO (Reusable) -->
     <div id="ministryDetailModal" class="fixed inset-0 modal-backdrop z-[110] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
-            <h3 id="detail-title" class="text-2xl font-bold mb-4 text-emerald-300"></h3>
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 accent-border warm-glow overflow-y-auto max-h-[90vh]">
+            <h3 id="detail-title" class="text-2xl font-bold mb-4 light-glow-text"></h3>
             <div class="space-y-4">
                 <div class="text-center">
-                    <img id="detail-photo" src="" alt="Foto del Líder" class="w-32 h-32 object-cover rounded-full mx-auto border-4 border-emerald-500 mb-4">
+                    <img id="detail-photo" src="" onerror="this.onerror=null;this.src='https://placehold.co/128x128/F27A3A/000?text=Líder';" alt="Foto del Líder" class="w-32 h-32 object-cover rounded-full mx-auto border-4 accent-border mb-4">
                 </div>
-                <p><strong>Líder:</strong> <span id="detail-leader"></span></p>
-                <p><strong>Dirección:</strong> <span id="detail-address"></span></p>
-                <p><strong>Teléfono:</strong> <span id="detail-phone"></span></p>
-                <p class="pt-2 border-t border-gray-700"><strong>Célula (Día/Hora):</strong> <span id="detail-cell-info"></span></p>
-                <p><strong>Dirección de la Célula:</strong> <span id="detail-cell-address"></span></p>
+                <p><strong data-i18n="ministry_leader">Líder:</strong> <span id="detail-leader"></span></p>
+                <p><strong data-i18n="ministry_address">Dirección:</strong> <span id="detail-address"></span></p>
+                <p><strong data-i18n="ministry_phone">Teléfono:</strong> <span id="detail-phone"></span></p>
+                <p class="pt-2 border-t border-gray-700"><strong data-i18n="ministry_cell_time">Célula (Día/Hora):</strong> <span id="detail-cell-info"></span></p>
+                <p><strong data-i18n="ministry_cell_address">Dirección de la Célula:</strong> <span id="detail-cell-address"></span></p>
             </div>
-            <button onclick="toggleModal('ministryDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+            <button onclick="toggleModal('ministryDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
     <!-- MODALES: TWITCH EMBED -->
     <div id="twitchStreamModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-5xl border-4 border-emerald-500 jade-glow">
-            <h3 class="text-2xl font-bold mb-4 text-emerald-300">Transmisión en Vivo (Twitch)</h3>
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-5xl border-4 accent-border warm-glow">
+            <h3 class="text-2xl font-bold mb-4 light-glow-text" data-i18n="live_stream_title">Transmisión en Vivo (Twitch)</h3>
             <div class="aspect-video bg-black rounded-lg">
                 <!-- Reemplazar 'TU_CANAL_DE_TWITCH' con el nombre de tu canal -->
                 <iframe
@@ -334,40 +358,40 @@
                     class="rounded-lg">
                 </iframe>
             </div>
-            <button onclick="hideTwitchStream()" class="mt-4 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+            <button onclick="hideTwitchStream()" class="mt-4 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
     
     <!-- MODALES: EVENTOS (Calendario) -->
     <div id="eventsModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-2xl border-4 border-emerald-500 jade-glow">
-            <h3 class="text-2xl font-bold mb-4 text-emerald-300 text-center">Calendario de Eventos</h3>
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 max-w-2xl border-4 accent-border warm-glow">
+            <h3 class="text-2xl font-bold mb-4 light-glow-text text-center" data-i18n="events_calendar_title">Calendario de Eventos</h3>
             <div id="calendar-container">
                 <!-- El calendario se generará aquí -->
             </div>
-            <button onclick="toggleModal('eventsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+            <button onclick="toggleModal('eventsModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
     <!-- MODALES: DETALLE DE EVENTO (Reusable) -->
     <div id="eventDetailModal" class="fixed inset-0 modal-backdrop z-[110] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
-            <img id="event-image" src="" alt="Imagen del Evento" class="w-full h-48 object-cover rounded-lg mb-4 border-2 border-emerald-500">
-            <h3 id="event-title" class="text-2xl font-bold mb-2 text-emerald-300"></h3>
+        <div class="bg-gray-900 p-6 rounded-xl w-11/12 md:w-1/2 border-4 accent-border warm-glow overflow-y-auto max-h-[90vh]">
+            <img id="event-image" src="" onerror="this.onerror=null;this.src='https://placehold.co/300x200/F27A3A/000?text=Evento+Sin+Imagen';" alt="Imagen del Evento" class="w-full h-48 object-cover rounded-lg mb-4 border-2 accent-border">
+            <h3 id="event-title" class="text-2xl font-bold mb-2 light-glow-text"></h3>
             <p id="event-date" class="text-sm text-gray-400 mb-4"></p>
             <p id="event-description" class="text-gray-300"></p>
-            <button onclick="toggleModal('eventDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">Cerrar</button>
+            <button onclick="toggleModal('eventDetailModal')" class="mt-6 w-full py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
     <!-- MODALES: SECCIÓN GENÉRICA (Para Iglesia, Noticias, Mensajes, Estudio, Adoración) -->
     <div id="genericModal" class="fixed inset-0 modal-backdrop z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 p-8 rounded-xl w-11/12 max-w-4xl border-4 border-emerald-500 jade-glow overflow-y-auto max-h-[90vh]">
-            <h3 id="generic-title" class="text-3xl font-bold mb-6 text-emerald-300 text-center"></h3>
+        <div class="bg-gray-900 p-8 rounded-xl w-11/12 max-w-4xl border-4 accent-border warm-glow overflow-y-auto max-h-[90vh]">
+            <h3 id="generic-title" class="text-3xl font-bold mb-6 light-glow-text text-center"></h3>
             <div id="generic-content">
                 <!-- Contenido dinámico para cada sección -->
             </div>
-            <button onclick="hideGenericModal()" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold">Cerrar</button>
+            <button onclick="hideGenericModal()" class="mt-8 w-full py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition font-bold" data-i18n="close_button">Cerrar</button>
         </div>
     </div>
 
@@ -383,7 +407,6 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // Inicialización y autenticación de Firebase
         let db;
         let auth;
         let userId = null;
@@ -391,18 +414,15 @@
         
         if (firebaseConfig) {
             try {
-                // Configura el nivel de logs para depuración
                 setLogLevel('Debug');
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Listener de estado de autenticación
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
                     } else {
-                        // Si no hay usuario (lo que no debería pasar con el token), intenta anónimo
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
                         } else {
@@ -412,7 +432,6 @@
                     }
                     isAuthReady = true;
                     console.log("Firebase Auth Ready. User ID:", userId);
-                    // Una vez listo, cargar las peticiones de oración
                     loadPrayerRequests();
                 });
             } catch (error) {
@@ -421,8 +440,196 @@
         } else {
             console.warn("La configuración de Firebase no está disponible. Las funciones de Guardar/Cargar no funcionarán.");
             isAuthReady = true;
-            userId = crypto.randomUUID(); // ID temporal para simulación
+            userId = crypto.randomUUID();
         }
+
+        // --- I18N (INTERNACIONALIZACIÓN / TRADUCCIONES) ---
+        let currentLang = 'es'; // Default language
+
+        const translations = {
+            es: {
+                // Global
+                radio_name: "Radio Visión",
+                welcome_title: "Bienvenido a Nuestro Hogar Digital",
+                welcome_subtitle: "Conéctate a la transmisión en vivo, explora nuestros ministerios y únete a nuestra comunidad de fe.",
+                live_stream_button: "¡Ver Transmisión en Vivo Ahora!",
+                close_button: "Cerrar",
+                loading_requests: "Cargando peticiones...",
+
+                // FAB Titles (data-i18n-title)
+                btn_church: "Iglesia",
+                btn_ministries: "Ministerios",
+                btn_reading_plan: "Plan de Lectura",
+                btn_news: "Noticias",
+                btn_messages: "Mensajes",
+                btn_live_video: "Video en Vivo",
+                btn_events: "Eventos",
+                btn_prayer_wall: "Muro de Oración",
+                btn_bible_study: "Estudio Bíblico",
+                btn_worship: "Adoración/Predicaciones",
+                btn_personal_plan_config: "Configurar Plan Personal",
+
+                // Settings Modal
+                settings_title: "Ajustes y Notificaciones",
+                notif_stream: "Notificaciones de Transmisión en Directo",
+                notif_events: "Notificaciones de Eventos",
+                notif_news: "Notificaciones de Noticias",
+                language_section: "Idioma",
+                about_section: "Acerca de (v1.0)",
+                about_dev: "Acerca del Desarrollador",
+                about_privacy: "Política de Privacidad",
+                about_terms: "Términos y Condiciones",
+
+                // Prayer Wall
+                prayer_wall_title: "Muro de Oración",
+                prayer_input_placeholder: "Escribe tu petición de oración aquí...",
+                send_request_button: "Enviar Petición",
+                
+                // Devotional Plan
+                personal_plan_title: "Configura tu Plan Personal",
+                reminder_time_label: "Hora de Recordatorio Diario:",
+                reminder_days_label: "Días para Recordar:",
+                day_mon: "Lun", day_tue: "Mar", day_wed: "Mié", day_thu: "Jue", day_fri: "Vie", day_sat: "Sáb", day_sun: "Dom",
+                save_plan_button: "Guardar Plan",
+
+                // Ministry Details
+                ministry_leader: "Líder:",
+                ministry_address: "Dirección:",
+                ministry_phone: "Teléfono:",
+                ministry_cell_time: "Célula (Día/Hora):",
+                ministry_cell_address: "Dirección de la Célula:",
+
+                // Ministries Modal
+                ministries_title: "Nuestros Ministerios",
+                
+                // Events Modal
+                events_calendar_title: "Calendario de Eventos",
+
+                // Twitch Modal
+                live_stream_title: "Transmisión en Vivo (Twitch)",
+
+                // Generic Sections (Titles only, content is complex HTML/JS)
+                churchModal: "Nuestra Iglesia",
+                planModal: "Plan de Lectura",
+                newsModal: "Noticias de la Radio e Iglesia",
+                messagesModal: "Mensajes y Sermones Archivados",
+                bibleStudyModal: "Estudios Bíblicos y Libros",
+                worshipModal: "Adoración y Predicaciones",
+            },
+            en: {
+                // Global
+                radio_name: "Vision Radio",
+                welcome_title: "Welcome to Our Digital Home",
+                welcome_subtitle: "Connect to the live stream, explore our ministries, and join our community of faith.",
+                live_stream_button: "Watch Live Stream Now!",
+                close_button: "Close",
+                loading_requests: "Loading requests...",
+
+                // FAB Titles (data-i18n-title)
+                btn_church: "Church",
+                btn_ministries: "Ministries",
+                btn_reading_plan: "Reading Plan",
+                btn_news: "News",
+                btn_messages: "Messages",
+                btn_live_video: "Live Video",
+                btn_events: "Events",
+                btn_prayer_wall: "Prayer Wall",
+                btn_bible_study: "Bible Study",
+                btn_worship: "Worship/Sermons",
+                btn_personal_plan_config: "Configure Personal Plan",
+
+                // Settings Modal
+                settings_title: "Settings and Notifications",
+                notif_stream: "Live Stream Notifications",
+                notif_events: "Event Notifications",
+                notif_news: "News Notifications",
+                language_section: "Language",
+                about_section: "About (v1.0)",
+                about_dev: "About Developer",
+                about_privacy: "Privacy Policy",
+                about_terms: "Terms and Conditions",
+
+                // Prayer Wall
+                prayer_wall_title: "Prayer Wall",
+                prayer_input_placeholder: "Write your prayer request here...",
+                send_request_button: "Send Request",
+
+                // Devotional Plan
+                personal_plan_title: "Configure Your Personal Plan",
+                reminder_time_label: "Daily Reminder Time:",
+                reminder_days_label: "Days to Remind:",
+                day_mon: "Mon", day_tue: "Tue", day_wed: "Wed", day_thu: "Thu", day_fri: "Fri", day_sat: "Sat", day_sun: "Sun",
+                save_plan_button: "Save Plan",
+
+                // Ministry Details
+                ministry_leader: "Leader:",
+                ministry_address: "Address:",
+                ministry_phone: "Phone:",
+                ministry_cell_time: "Cell (Day/Time):",
+                ministry_cell_address: "Cell Address:",
+
+                // Ministries Modal
+                ministries_title: "Our Ministries",
+
+                // Events Modal
+                events_calendar_title: "Events Calendar",
+
+                // Twitch Modal
+                live_stream_title: "Live Stream (Twitch)",
+
+                // Generic Sections (Titles only, content is complex HTML/JS)
+                churchModal: "Our Church",
+                planModal: "Reading Plan",
+                newsModal: "Radio and Church News",
+                messagesModal: "Archived Messages and Sermons",
+                bibleStudyModal: "Bible Studies and Books",
+                worshipModal: "Worship and Sermons",
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            // 1. Update text content
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (t[key]) {
+                    element.textContent = t[key];
+                }
+            });
+
+            // 2. Update placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                if (t[key]) {
+                    element.setAttribute('placeholder', t[key]);
+                }
+            });
+
+            // 3. Update titles
+            document.querySelectorAll('[data-i18n-title]').forEach(element => {
+                const key = element.getAttribute('data-i18n-title');
+                if (t[key]) {
+                    element.setAttribute('title', t[key]);
+                }
+            });
+
+            // 4. Update Language Label in Settings Modal
+            document.getElementById('languageLabel').textContent = lang === 'es' ? "Español / English" : "English / Español";
+
+            // Re-render complex content that uses static HTML strings (like the generic modals)
+            if (!document.getElementById('genericModal').classList.contains('hidden')) {
+                 const currentSection = document.getElementById('generic-title').getAttribute('data-current-section');
+                 if (currentSection) populateGenericModal(currentSection);
+            }
+        }
+
+        document.getElementById('languageToggle').addEventListener('change', (e) => {
+            const newLang = e.target.checked ? 'es' : 'en';
+            setLanguage(newLang);
+        });
+
 
         // --- FUNCIONES GLOBALES DE UI ---
 
@@ -456,26 +663,18 @@
         }
 
         window.showSection = function(sectionId) {
-            // Ocultar todas las secciones flotantes
             document.getElementById('prayer-wall').classList.add('hidden');
             document.getElementById('devotional-plan').classList.add('hidden');
-            
-            // Ocultar el modal genérico por si está abierto
             document.getElementById('genericModal').classList.add('hidden');
 
 
             if (sectionId === 'prayer-wall' || sectionId === 'devotional-plan') {
-                // Mostrar secciones que tienen contenido en el DOM principal
                 document.getElementById(sectionId).classList.remove('hidden');
-                // Ocultar el menú FAB después de seleccionar
                 document.getElementById('fab-toggle').click(); 
-                // Hacer scroll a la sección
                 document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
             } else {
-                // Mostrar secciones que usan el modal genérico
                 populateGenericModal(sectionId);
                 toggleModal('genericModal');
-                // Ocultar el menú FAB después de seleccionar
                 document.getElementById('fab-toggle').click(); 
             }
         }
@@ -486,67 +685,72 @@
 
         // --- DATOS Y LÓGICA DE MINISTERIOS ---
 
+        // Note: Ministry details data is NOT translated dynamically as it typically contains names, addresses, and fixed meeting times.
         const MINISTRIES_DATA = {
             ninos: {
-                title: 'Ministerio de Niños', leader: 'Hermana Ana', address: 'Calle 123, Ciudad', phone: '555-0101', 
-                cellInfo: 'Jueves 5:00 PM', cellAddress: 'Casa de Ana, Sector A', photo: 'https://placehold.co/128x128/10B981/000?text=Niños',
+                title_es: 'Ministerio de Niños', title_en: 'Children\'s Ministry', leader: 'Hermana Ana', address: 'Calle 123, Ciudad', phone: '555-0101', 
+                cellInfo: 'Jueves 5:00 PM', cellAddress: 'Casa de Ana, Sector A', photo: 'https://placehold.co/128x128/F27A3A/000?text=Niños',
                 icon: 'baby'
             },
             alabanza: {
-                title: 'Ministerio de Alabanza', leader: 'Hermano David', address: 'Auditorio Principal', phone: '555-0102', 
-                cellInfo: 'Viernes 8:00 PM', cellAddress: 'Salón de Ensayos', photo: 'https://placehold.co/128x128/10B981/000?text=Alabanza',
+                title_es: 'Ministerio de Alabanza', title_en: 'Worship Ministry', leader: 'Hermano David', address: 'Auditorio Principal', phone: '555-0102', 
+                cellInfo: 'Viernes 8:00 PM', cellAddress: 'Salón de Ensayos', photo: 'https://placehold.co/128x128/F27A3A/000?text=Alabanza',
                 icon: 'mic-2'
             },
             jovenes: {
-                title: 'Ministerio de Jóvenes', leader: 'Pastor Carlos', address: 'Centro Juvenil', phone: '555-0103', 
-                cellInfo: 'Sábados 6:00 PM', cellAddress: 'Parque Central', photo: 'https://placehold.co/128x128/10B981/000?text=Jóvenes',
+                title_es: 'Ministerio de Jóvenes', title_en: 'Youth Ministry', leader: 'Pastor Carlos', address: 'Centro Juvenil', phone: '555-0103', 
+                cellInfo: 'Sábados 6:00 PM', cellAddress: 'Parque Central', photo: 'https://placehold.co/128x128/F27A3A/000?text=Jóvenes',
                 icon: 'users'
             },
             prejovenes: {
-                title: 'Ministerio de Prejóvenes', leader: 'Líder Sofía', address: 'Salón B', phone: '555-0104', 
-                cellInfo: 'Sábados 3:00 PM', cellAddress: 'Casa de Sofía, Sector C', photo: 'https://placehold.co/128x128/10B981/000?text=Prejóvenes',
+                title_es: 'Ministerio de Prejóvenes', title_en: 'Pre-Youth Ministry', leader: 'Líder Sofía', address: 'Salón B', phone: '555-0104', 
+                cellInfo: 'Sábados 3:00 PM', cellAddress: 'Casa de Sofía, Sector C', photo: 'https://placehold.co/128x128/F27A3A/000?text=Prejóvenes',
                 icon: 'user-cog'
             },
             caballeros: {
-                title: 'Ministerio de Caballeros', leader: 'Diácono Juan', address: 'Oficina 1', phone: '555-0105', 
-                cellInfo: 'Miércoles 7:00 AM', cellAddress: 'Cafetería del Sur', photo: 'https://placehold.co/128x128/10B981/000?text=Caballeros',
+                title_es: 'Ministerio de Caballeros', title_en: 'Men\'s Ministry', leader: 'Diácono Juan', address: 'Oficina 1', phone: '555-0105', 
+                cellInfo: 'Miércoles 7:00 AM', cellAddress: 'Cafetería del Sur', photo: 'https://placehold.co/128x128/F27A3A/000?text=Caballeros',
                 icon: 'briefcase'
             },
             damas: {
-                title: 'Ministerio de Damas', leader: 'Líder María', address: 'Salón C', phone: '555-0106', 
-                cellInfo: 'Martes 10:00 AM', cellAddress: 'Salón de Manualidades', photo: 'https://placehold.co/128x128/10B981/000?text=Damas',
+                title_es: 'Ministerio de Damas', title_en: 'Ladies\' Ministry', leader: 'Líder María', address: 'Salón C', phone: '555-0106', 
+                cellInfo: 'Martes 10:00 AM', cellAddress: 'Salón de Manualidades', photo: 'https://placehold.co/128x128/F27A3A/000?text=Damas',
                 icon: 'flower'
             },
             mujeres: {
-                title: 'Ministerio de Mujeres', leader: 'Pastora Elena', address: 'Salón Principal', phone: '555-0107', 
-                cellInfo: 'Jueves 9:00 AM', cellAddress: 'Casa de Elena, Zona VIP', photo: 'https://placehold.co/128x128/10B981/000?text=Mujeres',
+                title_es: 'Ministerio de Mujeres', title_en: 'Women\'s Ministry', leader: 'Pastora Elena', address: 'Salón Principal', phone: '555-0107', 
+                cellInfo: 'Jueves 9:00 AM', cellAddress: 'Casa de Elena, Zona VIP', photo: 'https://placehold.co/128x128/F27A3A/000?text=Mujeres',
                 icon: 'woman'
             },
             evangelismo: {
-                title: 'Ministerio de Evangelismo', leader: 'Evangelista Pedro', address: 'Punto de Encuentro', phone: '555-0108', 
-                cellInfo: 'Sábados 9:00 AM', cellAddress: 'El Mercado', photo: 'https://placehold.co/128x128/10B981/000?text=Evangelismo',
+                title_es: 'Ministerio de Evangelismo', title_en: 'Evangelism Ministry', leader: 'Evangelista Pedro', address: 'Punto de Encuentro', phone: '555-0108', 
+                cellInfo: 'Sábados 9:00 AM', cellAddress: 'El Mercado', photo: 'https://placehold.co/128x128/F27A3A/000?text=Evangelismo',
                 icon: 'megaphone'
             }
         };
 
         function renderMinistries() {
             const grid = document.getElementById('ministries-grid');
+            const titleKey = currentLang === 'es' ? 'title_es' : 'title_en';
+
             grid.innerHTML = Object.keys(MINISTRIES_DATA).map(key => {
                 const ministry = MINISTRIES_DATA[key];
                 return `
                     <button onclick="showMinistryDetail('${key}')" 
-                        class="p-4 bg-gray-800 rounded-xl flex flex-col items-center justify-center space-y-2 text-center hover:bg-gray-700 transition jade-glow-hover border border-transparent hover:border-emerald-500">
-                        <i data-lucide="${ministry.icon}" class="w-8 h-8 text-emerald-500"></i>
-                        <span class="font-semibold text-sm">${ministry.title}</span>
+                        class="p-4 bg-gray-800 rounded-xl flex flex-col items-center justify-center space-y-2 text-center hover:bg-gray-700 transition warm-glow-hover border border-transparent hover:border-[#F27A3A]">
+                        <i data-lucide="${ministry.icon}" class="w-8 h-8 light-glow-text"></i>
+                        <span class="font-semibold text-sm">${ministry[titleKey]}</span>
                     </button>
                 `;
             }).join('');
-            lucide.createIcons(); // Vuelve a crear los iconos después de inyectar HTML
+            lucide.createIcons();
         }
 
         window.showMinistryDetail = function(key) {
             const detail = MINISTRIES_DATA[key];
-            document.getElementById('detail-title').textContent = detail.title;
+            const titleKey = currentLang === 'es' ? 'title_es' : 'title_en';
+
+            document.getElementById('detail-title').textContent = detail[titleKey];
             document.getElementById('detail-leader').textContent = detail.leader;
             document.getElementById('detail-address').textContent = detail.address;
             document.getElementById('detail-phone').textContent = detail.phone;
@@ -554,7 +758,6 @@
             document.getElementById('detail-cell-address').textContent = detail.cellAddress;
             document.getElementById('detail-photo').src = detail.photo;
             
-            // Abrir modal de detalle y cerrar el modal principal de ministerios
             toggleModal('ministriesModal');
             toggleModal('ministryDetailModal');
         }
@@ -562,9 +765,9 @@
         // --- LÓGICA DEL CALENDARIO DE EVENTOS ---
 
         const EVENTS = [
-            { date: '2025-10-15', title: 'Conferencia de Jóvenes', description: 'Un tiempo especial de adoración y palabra con invitados.', image: 'https://placehold.co/300x200/10B981/000?text=Conferencia+Jóvenes' },
-            { date: '2025-10-28', title: 'Estudio Bíblico Especial', description: 'Profundizando en el libro de Romanos.', image: 'https://placehold.co/300x200/10B981/000?text=Estudio+Rom' },
-            { date: '2025-11-05', title: 'Vigilia de Oración', description: 'Toda la noche orando por la ciudad.', image: 'https://placehold.co/300x200/10B981/000?text=Vigilia+Oración' }
+            { date: '2025-10-15', title_es: 'Conferencia de Jóvenes', title_en: 'Youth Conference', description_es: 'Un tiempo especial de adoración y palabra con invitados.', description_en: 'A special time of worship and word with guests.', image: 'https://placehold.co/300x200/F27A3A/000?text=Conferencia+Jóvenes' },
+            { date: '2025-10-28', title_es: 'Estudio Bíblico Especial', title_en: 'Special Bible Study', description_es: 'Profundizando en el libro de Romanos.', description_en: 'Deepening in the book of Romans.', image: 'https://placehold.co/300x200/F27A3A/000?text=Estudio+Rom' },
+            { date: '2025-11-05', title_es: 'Vigilia de Oración', title_en: 'Prayer Vigil', description_es: 'Toda la noche orando por la ciudad.', description_en: 'All night praying for the city.', image: 'https://placehold.co/300x200/F27A3A/000?text=Vigilia+Oración' }
         ];
 
         function renderCalendar() {
@@ -573,30 +776,34 @@
             const year = now.getFullYear();
             const month = now.getMonth();
             
-            // Crear una fecha para el primer día del mes
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             const daysInMonth = lastDay.getDate();
-            const startDayOfWeek = firstDay.getDay(); // 0 = Domingo, 6 = Sábado
+            const startDayOfWeek = firstDay.getDay(); 
             
             const eventDates = EVENTS.map(e => new Date(e.date).toDateString());
+            
+            // Traducción de los días de la semana
+            const dayNames = currentLang === 'es' 
+                ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] 
+                : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            const monthName = firstDay.toLocaleString(currentLang === 'es' ? 'es-ES' : 'en-US', { month: 'long', year: 'numeric' });
 
             let html = `
                 <div class="text-center mb-4">
-                    <h4 class="text-xl font-semibold">${firstDay.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</h4>
+                    <h4 class="text-xl font-semibold">${monthName}</h4>
                 </div>
-                <div class="grid grid-cols-7 text-center font-bold text-emerald-400 border-b border-gray-700 pb-2">
-                    <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+                <div class="grid grid-cols-7 text-center font-bold light-glow-text border-b border-gray-700 pb-2">
+                    ${dayNames.map(day => `<span>${day}</span>`).join('')}
                 </div>
                 <div class="grid grid-cols-7 gap-1 text-center mt-2">
             `;
             
-            // Espacios en blanco al inicio (días del mes anterior)
             for (let i = 0; i < startDayOfWeek; i++) {
                 html += '<div></div>';
             }
 
-            // Días del mes
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDate = new Date(year, month, day);
                 const isToday = currentDate.toDateString() === now.toDateString();
@@ -604,7 +811,7 @@
                 
                 const classes = [
                     'p-2 rounded-lg transition text-sm',
-                    isToday ? 'bg-emerald-600 font-bold' : 'bg-gray-800',
+                    isToday ? 'bg-[#8c4722] font-bold' : 'bg-gray-800', 
                     hasEvent ? 'has-event event-day' : ''
                 ].join(' ');
 
@@ -622,31 +829,33 @@
         window.showEventDetail = function(dateString) {
             const event = EVENTS.find(e => e.date === dateString);
             if (event) {
-                document.getElementById('event-title').textContent = event.title;
-                document.getElementById('event-date').textContent = new Date(event.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                document.getElementById('event-description').textContent = event.description;
+                const titleKey = currentLang === 'es' ? 'title_es' : 'title_en';
+                const descKey = currentLang === 'es' ? 'description_es' : 'description_en';
+                const locale = currentLang === 'es' ? 'es-ES' : 'en-US';
+
+                document.getElementById('event-title').textContent = event[titleKey];
+                document.getElementById('event-date').textContent = new Date(event.date).toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                document.getElementById('event-description').textContent = event[descKey];
                 document.getElementById('event-image').src = event.image;
 
-                // Abrir modal de detalle de evento
                 toggleModal('eventDetailModal');
             }
         }
 
         // --- LÓGICA DE SECCIONES GENÉRICAS (Iglesia, Noticias, etc.) ---
 
-        const SECTIONS_CONTENT = {
+        const SECTIONS_CONTENT_ES = {
             churchModal: {
-                title: "Nuestra Iglesia",
                 content: `
                     <div class="space-y-6">
                         <div class="bg-gray-800 p-4 rounded-lg">
-                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Información General</h4>
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">Información General</h4>
                             <p class="text-gray-300">Dirección: Av. La Esperanza #456, Ciudad de Fe.</p>
                             <p class="text-gray-300">Horarios de Servicio: Domingos 10:00 AM y 6:00 PM. Miércoles de Estudio Bíblico 7:00 PM.</p>
                             <p class="text-gray-300">Teléfono: (555) 123-4567</p>
                         </div>
                         <div class="bg-gray-800 p-4 rounded-lg">
-                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Nuestra Historia</h4>
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">Nuestra Historia</h4>
                             <p class="text-gray-300">Fundada en 1998 con la visión de alcanzar a la comunidad con el mensaje de esperanza. A lo largo de los años, hemos crecido y establecido diversos ministerios para servir a todas las edades.</p>
                             <p class="text-gray-300">Nuestra misión es Glorificar a Dios haciendo discípulos.</p>
                         </div>
@@ -654,57 +863,34 @@
                 `
             },
             planModal: {
-                title: "Plan de Lectura",
                 content: `
                     <div class="space-y-4">
                         <p class="text-gray-300">Aquí encontrarás enlaces a nuestros planes de lectura bíblica y estudios temáticos.</p>
                         <ul class="space-y-2">
-                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Plan de Lectura Anual (Misterios de la Biblia)</a></li>
-                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Estudio sobre el Liderazgo de Jesús</a></li>
-                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Link a un Libro de Devocional Recomendado</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Plan de Lectura Anual (Misterios de la Biblia)</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Estudio sobre el Liderazgo de Jesús</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Link a un Libro de Devocional Recomendado</a></li>
                         </ul>
                     </div>
                 `
             },
             newsModal: {
-                title: "Noticias de la Radio e Iglesia",
                 content: `
-                    <p class="text-gray-300 mb-6">Mantente al día con lo último de nuestra comunidad.</p>
+                    <p class="text-gray-300 mb-6">Mantente al día con lo último de nuestra comunidad. Haz clic en un recuadro para ir a la noticia (simulación de QR/Link).</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Recuadro 1 -->
-                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia1', '_blank')">
-                            <img src="https://placehold.co/400x200/10B981/000?text=Nueva+Serie" alt="Noticia 1" class="w-full h-40 object-cover">
+                        <div class="bg-gray-800 rounded-xl overflow-hidden warm-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia1', '_blank')">
+                            <img src="https://placehold.co/400x200/F27A3A/000?text=Nueva+Serie" alt="Noticia 1" class="w-full h-40 object-cover">
                             <div class="p-4">
-                                <h5 class="font-bold text-emerald-300">Lanzamiento de Nueva Serie de Predicaciones</h5>
+                                <h5 class="font-bold light-glow-text">Lanzamiento de Nueva Serie de Predicaciones</h5>
                                 <p class="text-sm text-gray-400 mt-1">Descubre 'Fe en la Adversidad'.</p>
-                                <!-- Esto sería el QR real -->
                                 <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
                             </div>
                         </div>
-                        <!-- Recuadro 2 -->
-                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia2', '_blank')">
-                            <img src="https://placehold.co/400x200/10B981/000?text=Retiro+2025" alt="Noticia 2" class="w-full h-40 object-cover">
+                        <div class="bg-gray-800 rounded-xl overflow-hidden warm-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia2', '_blank')">
+                            <img src="https://placehold.co/400x200/F27A3A/000?text=Retiro+2025" alt="Noticia 2" class="w-full h-40 object-cover">
                             <div class="p-4">
-                                <h5 class="font-bold text-emerald-300">¡Inscripciones Abiertas para el Retiro 2025!</h5>
+                                <h5 class="font-bold light-glow-text">¡Inscripciones Abiertas para el Retiro 2025!</h5>
                                 <p class="text-sm text-gray-400 mt-1">Reserva tu lugar ahora.</p>
-                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
-                            </div>
-                        </div>
-                        <!-- Recuadro 3 -->
-                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia3', '_blank')">
-                            <img src="https://placehold.co/400x200/10B981/000?text=Voluntariado" alt="Noticia 3" class="w-full h-40 object-cover">
-                            <div class="p-4">
-                                <h5 class="font-bold text-emerald-300">Jornada de Voluntariado Comunitario</h5>
-                                <p class="text-sm text-gray-400 mt-1">Súmate a la labor de servicio.</p>
-                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
-                            </div>
-                        </div>
-                        <!-- Recuadro 4 -->
-                        <div class="bg-gray-800 rounded-xl overflow-hidden jade-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia4', '_blank')">
-                            <img src="https://placehold.co/400x200/10B981/000?text=Testimonios" alt="Noticia 4" class="w-full h-40 object-cover">
-                            <div class="p-4">
-                                <h5 class="font-bold text-emerald-300">Nuevos Testimonios de la Semana</h5>
-                                <p class="text-sm text-gray-400 mt-1">Inspírate con lo que Dios está haciendo.</p>
                                 <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
                             </div>
                         </div>
@@ -712,70 +898,178 @@
                 `
             },
             messagesModal: {
-                title: "Mensajes y Sermones Archivados",
                 content: `
                     <p class="text-gray-300 mb-4">Accede a todos los mensajes de nuestra página principal.</p>
                     <ul class="space-y-3">
-                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Mensaje: La Parábola del Sembrador (Parte 3)</a></li>
-                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Serie: Fundamentos de la Fe (Completa)</a></li>
-                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="text-emerald-400 hover:text-emerald-300 font-medium block">Mensaje Especial: Navidad 2024</a></li>
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium block">Mensaje: La Parábola del Sembrador (Parte 3)</a></li>
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium block">Serie: Fundamentos de la Fe (Completa)</a></li>
                     </ul>
                 `
             },
             bibleStudyModal: {
-                title: "Estudios Bíblicos y Libros",
                 content: `
                     <div class="space-y-6">
                         <div class="bg-gray-800 p-4 rounded-lg">
-                            <h4 class="text-xl font-semibold text-emerald-400 mb-2">Días y Temas de Estudio</h4>
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">Días y Temas de Estudio</h4>
                             <p class="text-gray-300"><strong>Miércoles a las 7:00 PM:</strong> Estudio Profundo sobre los Profetas Menores.</p>
                             <p class="text-gray-300"><strong>Sábados a las 10:00 AM:</strong> Taller de Apologética para Jóvenes.</p>
                         </div>
-                        <h4 class="text-xl font-semibold text-emerald-400 mb-2">Libros Recomendados</h4>
+                        <h4 class="text-xl font-semibold light-glow-text mb-2">Libros Recomendados</h4>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <!-- Libro 1 -->
                             <div class="bg-gray-800 rounded-lg p-3 text-center">
-                                <img src="https://placehold.co/100x150/065f46/FFF?text=Libro+A" alt="Libro A" class="mx-auto mb-2">
+                                <img src="https://placehold.co/100x150/8c4722/FFF?text=Libro+A" alt="Libro A" class="mx-auto mb-2">
                                 <p class="text-sm font-semibold">"El Camino del Discípulo"</p>
-                                <a href="#" class="text-xs text-emerald-400 hover:text-emerald-300">Ver Link</a>
+                                <a href="#" class="text-xs light-glow-text hover:text-[#FFB380]">Ver Link</a>
                             </div>
-                            <!-- Libro 2 -->
                             <div class="bg-gray-800 rounded-lg p-3 text-center">
-                                <img src="https://placehold.co/100x150/065f46/FFF?text=Libro+B" alt="Libro B" class="mx-auto mb-2">
+                                <img src="https://placehold.co/100x150/8c4722/FFF?text=Libro+B" alt="Libro B" class="mx-auto mb-2">
                                 <p class="text-sm font-semibold">"Principios de Adoración"</p>
-                                <a href="#" class="text-xs text-emerald-400 hover:text-emerald-300">Ver Link</a>
+                                <a href="#" class="text-xs light-glow-text hover:text-[#FFB380]">Ver Link</a>
                             </div>
                         </div>
                     </div>
                 `
             },
             worshipModal: {
-                title: "Adoración y Predicaciones",
                 content: `
                     <p class="text-gray-300 mb-4">Accede a las listas de reproducción de adoración y predicaciones pasadas.</p>
                     <div class="space-y-4">
                         <div class="bg-gray-800 p-4 rounded-lg">
-                            <h4 class="text-xl font-semibold text-emerald-400 mb-2 flex items-center"><i data-lucide="youtube" class="w-5 h-5 mr-2"></i> Música de Adoración</h4>
+                            <h4 class="text-xl font-semibold light-glow-text mb-2 flex items-center"><i data-lucide="youtube" class="w-5 h-5 mr-2"></i> Música de Adoración</h4>
                             <p class="text-gray-400">Lista de las alabanzas cantadas en los servicios.</p>
-                            <a href="#" class="mt-2 inline-block text-emerald-400 hover:text-emerald-300 font-medium">Link a Playlist de Alabanza</a>
+                            <a href="#" class="mt-2 inline-block light-glow-text hover:text-[#FFB380] font-medium">Link a Playlist de Alabanza</a>
                         </div>
                         <div class="bg-gray-800 p-4 rounded-lg">
-                            <h4 class="text-xl font-semibold text-emerald-400 mb-2 flex items-center"><i data-lucide="message-square" class="w-5 h-5 mr-2"></i> Predicaciones Grabadas</h4>
+                            <h4 class="text-xl font-semibold light-glow-text mb-2 flex items-center"><i data-lucide="message-square" class="w-5 h-5 mr-2"></i> Predicaciones Grabadas</h4>
                             <p class="text-gray-400">Archivo completo de todos los mensajes dominicales.</p>
-                            <a href="#" class="mt-2 inline-block text-emerald-400 hover:text-emerald-300 font-medium">Link a Playlist de Predicaciones</a>
+                            <a href="#" class="mt-2 inline-block light-glow-text hover:text-[#FFB380] font-medium">Link a Playlist de Predicaciones</a>
                         </div>
                     </div>
                 `
             }
         };
 
-        function populateGenericModal(sectionId) {
-            const section = SECTIONS_CONTENT[sectionId];
-            if (section) {
-                document.getElementById('generic-title').textContent = section.title;
-                document.getElementById('generic-content').innerHTML = section.content;
-                lucide.createIcons(); // Recarga iconos
+        const SECTIONS_CONTENT_EN = {
+            churchModal: {
+                content: `
+                    <div class="space-y-6">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">General Information</h4>
+                            <p class="text-gray-300">Address: Av. La Esperanza #456, City of Faith.</p>
+                            <p class="text-gray-300">Service Hours: Sundays 10:00 AM and 6:00 PM. Wednesday Bible Study 7:00 PM.</p>
+                            <p class="text-gray-300">Phone: (555) 123-4567</p>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">Our History</h4>
+                            <p class="text-gray-300">Founded in 1998 with the vision of reaching the community with the message of hope. Over the years, we have grown and established various ministries to serve all ages.</p>
+                            <p class="text-gray-300">Our mission is to Glorify God by making disciples.</p>
+                        </div>
+                    </div>
+                `
+            },
+            planModal: {
+                content: `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Here you will find links to our Bible reading plans and thematic studies.</p>
+                        <ul class="space-y-2">
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Annual Reading Plan (Bible Mysteries)</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Study on the Leadership of Jesus</a></li>
+                            <li class="bg-gray-800 p-3 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium flex items-center"><i data-lucide="link" class="w-4 h-4 mr-2"></i> Link to a Recommended Devotional Book</a></li>
+                        </ul>
+                    </div>
+                `
+            },
+            newsModal: {
+                content: `
+                    <p class="text-gray-300 mb-6">Stay up to date with the latest from our community. Click on a box to go to the news (QR/Link simulation).</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800 rounded-xl overflow-hidden warm-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia1', '_blank')">
+                            <img src="https://placehold.co/400x200/F27A3A/000?text=New+Series" alt="News 1" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold light-glow-text">Launch of New Sermon Series</h5>
+                                <p class="text-sm text-gray-400 mt-1">Discover 'Faith in Adversity'.</p>
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
+                            </div>
+                        </div>
+                        <div class="bg-gray-800 rounded-xl overflow-hidden warm-glow-hover cursor-pointer" onclick="window.open('https://ejemplo.com/noticia2', '_blank')">
+                            <img src="https://placehold.co/400x200/F27A3A/000?text=Retreat+2025" alt="News 2" class="w-full h-40 object-cover">
+                            <div class="p-4">
+                                <h5 class="font-bold light-glow-text">Registration Open for the 2025 Retreat!</h5>
+                                <p class="text-sm text-gray-400 mt-1">Reserve your spot now.</p>
+                                <img src="https://placehold.co/50x50/FFFFFF/000?text=QR" alt="QR Link" class="float-right -mt-8 mr-2">
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            messagesModal: {
+                content: `
+                    <p class="text-gray-300 mb-4">Access all the messages from our main page.</p>
+                    <ul class="space-y-3">
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium block">Message: The Parable of the Sower (Part 3)</a></li>
+                        <li class="bg-gray-800 p-4 rounded-lg"><a href="#" class="light-glow-text hover:text-[#FFB380] font-medium block">Series: Foundations of Faith (Complete)</a></li>
+                    </ul>
+                `
+            },
+            bibleStudyModal: {
+                content: `
+                    <div class="space-y-6">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold light-glow-text mb-2">Study Days and Topics</h4>
+                            <p class="text-gray-300"><strong>Wednesday at 7:00 PM:</strong> Deep Study on the Minor Prophets.</p>
+                            <p class="text-gray-300"><strong>Saturday at 10:00 AM:</strong> Apologetics Workshop for Youth.</p>
+                        </div>
+                        <h4 class="text-xl font-semibold light-glow-text mb-2">Recommended Books</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <img src="https://placehold.co/100x150/8c4722/FFF?text=Book+A" alt="Book A" class="mx-auto mb-2">
+                                <p class="text-sm font-semibold">"The Disciple's Way"</p>
+                                <a href="#" class="text-xs light-glow-text hover:text-[#FFB380]">View Link</a>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <img src="https://placehold.co/100x150/8c4722/FFF?text=Book+B" alt="Book B" class="mx-auto mb-2">
+                                <p class="text-sm font-semibold">"Principles of Worship"</p>
+                                <a href="#" class="text-xs light-glow-text hover:text-[#FFB380]">View Link</a>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            worshipModal: {
+                content: `
+                    <p class="text-gray-300 mb-4">Access the playlists for worship and past sermons.</p>
+                    <div class="space-y-4">
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold light-glow-text mb-2 flex items-center"><i data-lucide="youtube" class="w-5 h-5 mr-2"></i> Worship Music</h4>
+                            <p class="text-gray-400">List of songs sung in services.</p>
+                            <a href="#" class="mt-2 inline-block light-glow-text hover:text-[#FFB380] font-medium">Link to Worship Playlist</a>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-lg">
+                            <h4 class="text-xl font-semibold light-glow-text mb-2 flex items-center"><i data-lucide="message-square" class="w-5 h-5 mr-2"></i> Recorded Sermons</h4>
+                            <p class="text-gray-400">Complete archive of all Sunday messages.</p>
+                            <a href="#" class="mt-2 inline-block light-glow-text hover:text-[#FFB380] font-medium">Link to Sermons Playlist</a>
+                        </div>
+                    </div>
+                `
             }
+        };
+
+        function getSectionContent(sectionId) {
+            if (currentLang === 'es') {
+                return SECTIONS_CONTENT_ES[sectionId].content;
+            } else {
+                return SECTIONS_CONTENT_EN[sectionId].content;
+            }
+        }
+
+        function populateGenericModal(sectionId) {
+            const titleKey = translations[currentLang][sectionId];
+            const content = getSectionContent(sectionId);
+
+            document.getElementById('generic-title').textContent = titleKey;
+            document.getElementById('generic-title').setAttribute('data-current-section', sectionId);
+            document.getElementById('generic-content').innerHTML = content;
+            lucide.createIcons(); 
         }
 
 
@@ -783,7 +1077,6 @@
 
         function loadPrayerRequests() {
             if (!isAuthReady || !db) return;
-
             const prayerCollectionRef = collection(db, `artifacts/${appId}/public/data/prayerRequests`);
             const q = query(prayerCollectionRef);
             const prayerList = document.getElementById('prayer-list');
@@ -792,19 +1085,22 @@
                 onSnapshot(q, (snapshot) => {
                     prayerList.innerHTML = '';
                     if (snapshot.empty) {
-                        prayerList.innerHTML = '<div class="text-center text-gray-500">Aún no hay peticiones de oración. ¡Sé el primero!</div>';
+                        const message = currentLang === 'es' 
+                            ? 'Aún no hay peticiones de oración. ¡Sé el primero!'
+                            : 'There are no prayer requests yet. Be the first!';
+                        prayerList.innerHTML = `<div class="text-center text-gray-500">${message}</div>`;
                         return;
                     }
                     
                     snapshot.docs.forEach(doc => {
                         const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString('es-ES') : 'Fecha desconocida';
+                        const dateLocale = currentLang === 'es' ? 'es-ES' : 'en-US';
+                        const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString(dateLocale) : 'Unknown Date';
                         
-                        // Usamos un nombre genérico para el usuario, ya que no estamos pidiendo un nombre explícito
-                        const usernameDisplay = `Usuario Anónimo (ID: ${userId.substring(0, 8)}...)`;
+                        const usernameDisplay = `User Anonymous (ID: ${userId.substring(0, 8)}...)`;
 
                         const requestHtml = `
-                            <div class="bg-gray-800 p-4 rounded-xl shadow-md border-l-4 border-emerald-500">
+                            <div class="bg-gray-800 p-4 rounded-xl shadow-md border-l-4 accent-border">
                                 <p class="text-gray-300 italic mb-2">"${data.text}"</p>
                                 <div class="text-right text-xs text-gray-500">
                                     <span>${usernameDisplay} - ${date}</span>
@@ -816,7 +1112,8 @@
                 });
             } catch (error) {
                 console.error("Error al cargar peticiones de oración:", error);
-                prayerList.innerHTML = '<div class="text-center text-red-500">Error al cargar las peticiones.</div>';
+                const errorMessage = currentLang === 'es' ? 'Error al cargar las peticiones.' : 'Error loading prayer requests.';
+                prayerList.innerHTML = `<div class="text-center text-red-500">${errorMessage}</div>`;
             }
         }
 
@@ -826,8 +1123,8 @@
             const statusElement = document.getElementById('prayer-status');
 
             if (!text || !db || !userId) {
-                statusElement.textContent = "Error: El texto no puede estar vacío o Firebase no está listo.";
-                statusElement.classList.remove('text-emerald-400');
+                statusElement.textContent = currentLang === 'es' ? "Error: El texto no puede estar vacío o Firebase no está listo." : "Error: Text cannot be empty or Firebase is not ready.";
+                statusElement.classList.remove('light-glow-text');
                 statusElement.classList.add('text-red-400');
                 return;
             }
@@ -840,14 +1137,14 @@
                     timestamp: serverTimestamp()
                 });
                 document.getElementById('prayer-request').value = '';
-                statusElement.textContent = "¡Petición de oración enviada con éxito!";
+                statusElement.textContent = currentLang === 'es' ? "¡Petición de oración enviada con éxito!" : "Prayer request sent successfully!";
                 statusElement.classList.remove('text-red-400');
-                statusElement.classList.add('text-emerald-400');
+                statusElement.classList.add('light-glow-text');
                 setTimeout(() => statusElement.textContent = '', 3000);
             } catch (error) {
                 console.error("Error al añadir la petición:", error);
-                statusElement.textContent = `Error: No se pudo enviar. ${error.message}`;
-                statusElement.classList.remove('text-emerald-400');
+                statusElement.textContent = currentLang === 'es' ? `Error: No se pudo enviar. ${error.message}` : `Error: Could not send request. ${error.message}`;
+                statusElement.classList.remove('light-glow-text');
                 statusElement.classList.add('text-red-400');
             }
         });
@@ -861,8 +1158,8 @@
             const statusElement = document.getElementById('plan-status');
 
             if (!planTime || days.length === 0 || !db || !userId) {
-                statusElement.textContent = "Error: Debe seleccionar una hora y al menos un día.";
-                statusElement.classList.remove('text-emerald-400');
+                statusElement.textContent = currentLang === 'es' ? "Error: Debe seleccionar una hora y al menos un día." : "Error: You must select a time and at least one day.";
+                statusElement.classList.remove('light-glow-text');
                 statusElement.classList.add('text-red-400');
                 return;
             }
@@ -874,27 +1171,27 @@
             };
 
             try {
-                // Usamos un documento fijo 'mainPlan' dentro de la colección privada del usuario
                 const planDocRef = doc(db, `artifacts/${appId}/users/${userId}/devotionalPlans/mainPlan`);
                 await setDoc(planDocRef, planData, { merge: true });
 
-                statusElement.textContent = "¡Plan personal guardado con éxito!";
+                statusElement.textContent = currentLang === 'es' ? "¡Plan personal guardado con éxito!" : "Personal plan saved successfully!";
                 statusElement.classList.remove('text-red-400');
-                statusElement.classList.add('text-emerald-400');
+                statusElement.classList.add('light-glow-text');
                 setTimeout(() => statusElement.textContent = '', 3000);
             } catch (error) {
                 console.error("Error al guardar el plan:", error);
-                statusElement.textContent = `Error: No se pudo guardar el plan. ${error.message}`;
-                statusElement.classList.remove('text-emerald-400');
+                statusElement.textContent = currentLang === 'es' ? `Error: No se pudo guardar el plan. ${error.message}` : `Error: Could not save the plan. ${error.message}`;
+                statusElement.classList.remove('light-glow-text');
                 statusElement.classList.add('text-red-400');
             }
         });
 
         // --- INICIALIZACIÓN DE LA PÁGINA ---
         window.onload = function() {
-            lucide.createIcons(); // Inicializa los iconos de Lucide
-            renderMinistries(); // Rellena el grid de ministerios
-            renderCalendar(); // Genera el calendario
+            setLanguage(currentLang); // Set initial language (default is ES)
+            lucide.createIcons(); 
+            renderMinistries(); 
+            renderCalendar();
         };
 
         // Escucha global para cerrar modales al presionar ESC
@@ -912,6 +1209,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
